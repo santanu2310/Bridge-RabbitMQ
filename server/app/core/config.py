@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     )
     RABBITMQ_PORT: str = "5671"
     # CELERY_BROKER_URL: str = "redis://redis:6379"
-    CELERY_BROKER_URL: str = "amqps://bridgebot:bdgbot212014@b-553fe81b-63b6-4ace-bd15-186c6428c97c.mq.ap-south-1.amazonaws.com:5671"
+    CELERY_BROKER_URL: str = ""
 
 
 settings = Settings()
