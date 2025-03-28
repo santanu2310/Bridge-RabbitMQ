@@ -1,0 +1,152 @@
+name: bridge-1
+
+services:
+    mongo-setup:
+        container_name: mongo-setup
+        image: mongo
+        restart: on-failure
+
+        volumes:
+            - ./scripts:/scripts
+        entrypoint: ["/scripts/setup.sh"]
+        depends_on:
+            mongo1:
+                condition: service_healthy
+            mongo2:
+                condition: service_healthy
+            mongo3:
+                condition: service_healthy
+
+    mongo1:
+        hostname: mongo1
+        container_name: localmongo1
+        image: mongo
+        expose:
+            - "27017"
+        ports:
+            - "27017:27017"
+        restart: always
+        entrypoint:
+            [
+                "mongod",
+                "--replSet",
+                "rs0",
+                "--bind_ip_all",
+                "--dbpath",
+                "/data/db",
+                "--oplogSize",
+                "128",
+            ]
+        healthcheck:
+            test: ["CMD", "mongosh", "--eval", "'db.runCommand({ ping: 1 })'"]
+            interval: 20s
+            timeout: 15s
+            retries: 5
+            start_period: 10s
+
+        volumes:
+            - ./mongodb/mongo/data1/db:/data/db
+            # - ./mongodb/mongo/data1/configdb:/data/configdb
+    mongo2:
+        hostname: mongo2
+        container_name: localmongo2
+        image: mongo
+        expose:
+            - "27017"
+        ports:
+            - "27018:27017"
+        restart: always
+        entrypoint:
+            [
+                "mongod",
+                "--replSet",
+                "rs0",
+                "--bind_ip_all",
+                "--dbpath",
+                "/data/db",
+                "--oplogSize",
+                "128",
+            ]
+        healthcheck:
+            test: ["CMD", "mongosh", "--eval", "'db.runCommand({ ping: 1 })'"]
+            interval: 20s
+            timeout: 15s
+            retries: 5
+            start_period: 10s
+
+        volumes:
+            - ./mongodb/mongo/data2/db:/data/db
+            # - ./mongodb/mongo/data2/configdb:/data/configdb
+    mongo3:
+        hostname: mongo3
+        container_name: localmongo3
+        image: mongo
+        expose:
+            - "27017"
+        ports:
+            - "27019:27017"
+        restart: always
+        entrypoint:
+            [
+                "mongod",
+                "--replSet",
+                "rs0",
+                "--bind_ip_all",
+                "--dbpath",
+                "/data/db",
+                "--oplogSize",
+                "128",
+            ]
+        healthcheck:
+            test: ["CMD", "mongosh", "--eval", "'db.runCommand({ ping: 1 })'"]
+            interval: 20s
+            timeout: 15s
+            retries: 5
+            start_period: 10s
+
+        volumes:
+            - ./mongodb/mongo/data3/db:/data/db
+            # - ./mongodb/mongo/data3/configdb:/data/configdb
+
+    celery:
+        build:
+            context: ../server
+            dockerfile: ./Dockerfile.celery
+
+        volumes:
+            - ../server/app:/server/app:consistent
+
+        # depends_on:
+        #     - redis
+
+    app:
+        container_name: bridge-server
+        build:
+            context: ../server
+            dockerfile: ./Dockerfile
+        ports:
+            - "8000:8000"
+        volumes:
+            - ../server/app:/server/app
+
+        command:
+            [
+                "uv",
+                "run",
+                "uvicorn",
+                "app.main:app",
+                "--host",
+                "0.0.0.0",
+                "--port",
+                "8000",
+                "--reload",
+                "--reload-dir",
+                "/server/app",
+            ]
+        depends_on:
+            # kafka:
+            #     condition: service_started
+            mongo-setup:
+                condition: service_completed_successfully
+            # celery:
+            #     condition: service_started
