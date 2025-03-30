@@ -113,6 +113,8 @@ services:
             context: ../server
             dockerfile: ./Dockerfile.celery
 
+        command: ["uv","run","watchfiles", "--ignore-paths", "./app.log", "--sigint-timeout", "30", "/server/.venv/bin/python -m celery -A app.background_tasks.celery.tasks worker --loglevel=INFO"]
+
         volumes:
             - ../server/app:/server/app:consistent
 
@@ -144,9 +146,7 @@ services:
                 "/server/app",
             ]
         depends_on:
-            # kafka:
-            #     condition: service_started
             mongo-setup:
                 condition: service_completed_successfully
-            # celery:
-            #     condition: service_started
+            celery:
+                condition: service_started
