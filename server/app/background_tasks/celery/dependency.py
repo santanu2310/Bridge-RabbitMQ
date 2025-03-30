@@ -1,6 +1,7 @@
 import logging
 from enum import Enum
 from typing import Dict, Any
+from celery import Task  # type: ignore
 from app.core.db import create_sync_client, SyncDatabase
 from app.core.message_broker import create_bloking_rabbit_connection
 from app.core.config import settings, create_s3_client
@@ -14,7 +15,7 @@ class Dependency(str, Enum):
     queue = "queue"
 
 
-class DependencyManager:
+class DependencyManager(Task):
     _instance = None
     _connections: Dict[str, Any] = {}
 
