@@ -1,0 +1,102 @@
+name: bridge-test
+
+services:
+    mongo-setup:
+        container_name: mongo-test
+        image: mongo
+        restart: on-failure
+
+        volumes:
+            - ./scripts:/scripts
+        entrypoint: ["/scripts/setup.sh"]
+        depends_on:
+            mongo1:
+                condition: service_healthy
+            mongo2:
+                condition: service_healthy
+            mongo3:
+                condition: service_healthy
+
+    mongo1:
+        hostname: mongo1
+        container_name: localmongo1
+        image: mongo
+        expose:
+            - "27017"
+        ports:
+            - "27017:27017"
+        restart: always
+        entrypoint:
+            [
+                "mongod",
+                "--replSet",
+                "rs0",
+                "--bind_ip_all",
+                "--dbpath",
+                "/data/db",
+                "--oplogSize",
+                "128",
+            ]
+        healthcheck:
+            test: ["CMD", "mongosh", "--eval", "'db.runCommand({ ping: 1 })'"]
+            interval: 20s
+            timeout: 15s
+            retries: 5
+            start_period: 10s
+
+
+    mongo2:
+        hostname: mongo2
+        container_name: localmongo2
+        image: mongo
+        expose:
+            - "27017"
+        ports:
+            - "27018:27017"
+        restart: always
+        entrypoint:
+            [
+                "mongod",
+                "--replSet",
+                "rs0",
+                "--bind_ip_all",
+                "--dbpath",
+                "/data/db",
+                "--oplogSize",
+                "128",
+            ]
+        healthcheck:
+            test: ["CMD", "mongosh", "--eval", "'db.runCommand({ ping: 1 })'"]
+            interval: 20s
+            timeout: 15s
+            retries: 5
+            start_period: 10s
+
+
+    mongo3:
+        hostname: mongo3
+        container_name: localmongo3
+        image: mongo
+        expose:
+            - "27017"
+        ports:
+            - "27019:27017"
+        restart: always
+        entrypoint:
+            [
+                "mongod",
+                "--replSet",
+                "rs0",
+                "--bind_ip_all",
+                "--dbpath",
+                "/data/db",
+                "--oplogSize",
+                "128",
+            ]
+        healthcheck:
+            test: ["CMD", "mongosh", "--eval", "'db.runCommand({ ping: 1 })'"]
+            interval: 20s
+            timeout: 15s
+            retries: 5
+            start_period: 10s
+
