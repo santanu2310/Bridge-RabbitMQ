@@ -1,5 +1,5 @@
 from typing import Optional, List, Any, Callable, Literal, Union
-from datetime import datetime
+from datetime import datetime, timezone
 from bson import ObjectId
 from typing_extensions import Annotated
 from enum import Enum, unique
@@ -80,14 +80,14 @@ class UserAuth(BaseModel):
     email: EmailStr
     password: str
     hashing_salt: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class UserAuthOut(BaseModel):
     id: PyObjectId = Field(validation_alias="_id")
     username: str
     email: EmailStr
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class UserProfile(BaseModel):
@@ -98,7 +98,7 @@ class UserProfile(BaseModel):
     profile_picture: str | None = None
     banner_picture: Optional[FileUrl] = None
     location: str | None = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class UserRegistration(BaseModel):
@@ -143,8 +143,8 @@ class Friends(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     user_id: PyObjectId
     friend_id: PyObjectId
-    update_at: datetime = Field(default_factory=datetime.utcnow)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    update_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class FriendRequestIn(BaseModel):
@@ -158,8 +158,8 @@ class FriendRequestDB(BaseModel):
     receiver_id: PyObjectId
     message: str | None = None
     status: Friends_Status = Friends_Status.pending
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class FriendRequestOut(BaseModel):
@@ -175,8 +175,10 @@ class Conversation(BaseModel):
         alias="_id", default=None, serialization_alias="id"
     )
     participants: List[PyObjectId]
-    start_date: datetime = Field(default_factory=datetime.utcnow)
-    last_message_date: datetime = Field(default_factory=datetime.utcnow)
+    start_date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    last_message_date: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
 
 
 class FileInfo(BaseModel):
@@ -195,7 +197,7 @@ class Message(BaseModel):
     receiver_id: Optional[PyObjectId] = None
     message: str
     attachment: Optional[FileInfo] = None
-    sending_time: datetime = Field(default_factory=datetime.utcnow)
+    sending_time: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     received_time: Optional[datetime] = None
     seen_time: Optional[datetime] = None
     status: Message_Status = Message_Status.send
