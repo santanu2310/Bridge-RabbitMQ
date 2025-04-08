@@ -1,7 +1,6 @@
 <script setup lang="ts">
 	import { ref } from "vue";
-	import type { Ref } from "vue";
-	import axios from "axios";
+	import { useAuthStore } from "@/stores/auth";
 
 	import IconPencil from "./icons/IconPencil.vue";
 
@@ -10,6 +9,8 @@
 		d_value: string;
 		label: string;
 	}>();
+
+	const authStore = useAuthStore();
 
 	const userData = ref(props.d_value);
 	const isReadonly = ref(true);
@@ -22,7 +23,7 @@
 		} else {
 			isReadonly.value = true;
 			try {
-				const response = await axios({
+				const response = await authStore.authAxios({
 					method: "patch",
 					url: "http://localhost:8000/users/update",
 					data: {
