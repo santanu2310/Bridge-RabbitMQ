@@ -1,8 +1,11 @@
 import { EventEmitter } from "events";
+import axios from "axios";
+import { useRouter } from "vue-router";
 import type { PacketType, RawData, Packet } from "@/types/Commons";
 
 type ReadyState = "opening" | "open" | "closing" | "closed";
 
+const router = useRouter();
 /**
  * The Socket class extends EventEmitter to enable event-driven behavior.
  * It wraps a WebSocket connection with additional functionality like
@@ -66,8 +69,17 @@ export class Socket extends EventEmitter {
 
 		this.socket.onclose = this.onClose.bind(this);
 
-		this.socket.onerror = (error) => {
+		this.socket.onerror = async (error) => {
 			console.error("WebSocket error:", error);
+			const response = await axios({
+				method: "post",
+				url: "http://localhost:8000/" + "users/refresh-token",
+				withCredentials: true,
+			});
+
+			if (response.status !== 200) {
+				router.push({ name: "login" });
+			}
 			this.emit("error", error);
 		};
 
