@@ -1,6 +1,5 @@
 import { defineStore } from "pinia";
 import { reactive, ref, computed } from "vue";
-import axios from "axios";
 import { useAuthStore } from "@/stores/auth";
 import type { User } from "@/types/User";
 import type { Message } from "@/types/Message";
@@ -45,8 +44,6 @@ export const useUserStore = defineStore("user", () => {
 				url: "users/me",
 			});
 
-			console.log(response);
-
 			if (response.status === 200) {
 				user.id = response.data.id;
 				user.userName = response.data.username;
@@ -59,10 +56,9 @@ export const useUserStore = defineStore("user", () => {
 				)) as string;
 				user.joinedDate = response.data.created_at;
 			}
-
-			console.log(user);
 		} catch (error) {
-			authStore.getTokenPair();
+			authStore.isAuthenticated = false;
+			authStore.isLoading = false;
 			console.error(error);
 		}
 	}

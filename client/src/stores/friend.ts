@@ -123,7 +123,7 @@ export const useFriendStore = defineStore("friend", () => {
 				const convResponse: Conversation = {
 					id: response.data.id,
 					participant: response.data.participants.find(
-							(id) => id != userStore.user.id
+							(id:string) => id != userStore.user.id
 						) as string,		//It shoud be participants
 					startDate: response.data.start_date,
 					lastMessageDate: response.data.last_message_date,

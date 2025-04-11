@@ -19,7 +19,7 @@ import {
 import { useUserStore } from "./user";
 import { useSyncStore } from "./background_sync";
 import { useAuthStore } from "./auth";
-import { addMessageInState } from "@/utils/MessageUtils";
+import { addMessageInState,updateMessageInState } from "@/utils/MessageUtils";
 import { removeExtension } from "@/utils/StringUtils";
 
 export const useMessageStore = defineStore("message", () => {
@@ -35,6 +35,7 @@ export const useMessageStore = defineStore("message", () => {
 
 	//handle receiving message
 	socket.on("message", async (msg) => {
+		console.log(msg)
 		// Validate required field
 		if (
 			!msg.id ||
@@ -96,10 +97,13 @@ export const useMessageStore = defineStore("message", () => {
 		}
 
 		// Remove temp messagee(only for the sender)
+		console.log(message);
 		if (message.senderId == userStore.user.id) {
 			if (msg.temp_id) {
 				await indexedDbService.deleteRecord("message", msg.temp_id);
-				deleteMessageFromList(message.conversationId!, msg.temp_id);
+				// deleteMessageFromList(message.conversationId!, msg.temp_id);
+				updateMessageInState(message, msg.temp_id);
+
 				await indexedDbService.deleteRecord("tempFile", msg.temp_id);
 			}
 		} else {
@@ -115,12 +119,12 @@ export const useMessageStore = defineStore("message", () => {
 				],
 				status: MessageStatus.received,
 			};
-
+			
+			console.log("sending sync message", syncMessge)
 			syncStore.sendMessage(syncMessge);
+			addMessageInState(message)
 		}
 
-		// Append the new message to the current conversation
-		userStore.conversations[message.conversationId!].messages.push(message);
 	});
 
 	async function sendMessage(message: string) {

@@ -116,7 +116,7 @@ export const useSyncStore = defineStore("background_sync", () => {
 			message.seenTime = seenDateTime;
 			console.log("from markMessageAsSeen :", toRaw(message));
 			// Update indesedDB record
-			await indexedDbService.updateRecord("message", toRaw(message));
+			await indexedDbService.updateRecord("message", message);
 
 			// Update UI state
 			updateMessageInState(message);
