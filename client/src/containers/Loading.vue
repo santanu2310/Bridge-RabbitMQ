@@ -1,3 +1,27 @@
+<script setup lang="ts">
+	import { onMounted } from "vue";
+	import { useUserStore } from "@/stores/user";
+	import { useSyncStore } from "@/stores/background_sync";
+	import { useFriendStore } from "@/stores/friend";
+	import { useAuthStore } from "@/stores/auth";
+
+	const userStore = useUserStore();
+	const friendStore = useFriendStore();
+	const syncStore = useSyncStore();
+	const authStore = useAuthStore();
+
+	onMounted(async () => {
+		await userStore.getUser();
+		authStore.isAuthenticated = false;
+		await syncStore.syncAndLoadConversationsFromLastDate();
+		await syncStore.syncMessageStatus();
+		await friendStore.listFriend();
+		await friendStore.getInitialOnlineStatus();
+		await friendStore.getPendingFriendRequests();
+		authStore.isLoading = false;
+	});
+</script>
+
 <template>
 	<div class="body w-screen h-screen flex items-center justify-center">
 		<div class="w-fit h-auto flex items-center flex-col">

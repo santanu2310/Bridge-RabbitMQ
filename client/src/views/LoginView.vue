@@ -24,6 +24,7 @@
 
 			if (response.status === 200) {
 				authStore.isAuthenticated = true;
+				authStore.isLoading = true;
 				indexedDbService.clearDatabase();
 				friendStore.listFriend();
 				router.push({ name: "home" });

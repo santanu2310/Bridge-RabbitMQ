@@ -38,11 +38,8 @@ const router = createRouter({
 			path: "/",
 			name: "home",
 			component: HomeView,
-			beforeEnter: async (to, from) => {
+			beforeEnter: async () => {
 				const authStore = useAuthStore();
-				while (authStore.isLoading) {
-					await new Promise((resolve) => setTimeout(resolve, 100)); // Adjust the delay as needed
-				}
 
 				if (authStore.isAuthenticated == false) {
 					return { name: "login" };

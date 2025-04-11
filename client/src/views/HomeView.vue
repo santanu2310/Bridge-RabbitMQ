@@ -1,11 +1,10 @@
 <script setup lang="ts">
-	import { ref, onMounted } from "vue";
+	import { ref } from "vue";
 
 	import IconLogo from "@/components/icons/IconLogo.vue";
 	import IconMessages from "@/components/icons/IconMessages.vue";
 	import IconGroupes from "@/components/icons/IconGroupes.vue";
 	import IconFriends from "@/components/icons/IconFriends.vue";
-	import IconBell from "@/components/icons/IconBell.vue";
 
 	import Chats from "@/containers/Chats.vue";
 	import Friends from "@/containers/Friends.vue";
@@ -15,34 +14,21 @@
 	import Conversation from "@/containers/Conversation.vue";
 
 	import { useUserStore } from "@/stores/user";
-	import { useMessageStore } from "@/stores/message";
-	import { useSyncStore } from "@/stores/background_sync";
-	import { useFriendStore } from "@/stores/friend";
 
 	const userStore = useUserStore();
-	const messageStore = useMessageStore();
-	const friendStore = useFriendStore();
-	const syncStore = useSyncStore();
 
-	const leftContent = ref<string>("message");
+	const leftContent = ref<string>("chats");
 
 	function switchContainer(n: string) {
 		leftContent.value = n;
 	}
-
-	onMounted(async () => {
-		await userStore.getUser();
-		await syncStore.syncAndLoadConversationsFromLastDate();
-		await syncStore.syncMessageStatus();
-		await friendStore.listFriend();
-		await friendStore.getInitialOnlineStatus();
-		await friendStore.getPendingFriendRequests();
-	});
 </script>
 
 <template>
 	<main class="w-full min-h-full flex">
-		<div class="navigation w-16 h-full flex flex-col justify-between">
+		<div
+			class="navigation md:w-12 lg:w-16 h-full flex flex-col justify-between"
+		>
 			<div class="w-full h-fit flex flex-col items-end">
 				<div
 					class="logo w-full h-auto aspect-square flex items-center justify-center"
@@ -79,14 +65,14 @@
 					@click="leftContent = 'profile'"
 				>
 					<img
-						:src="userStore.user.profilePicUrl"
+						:src="userStore.user.profilePicUrl as string"
 						alt=""
 						class="w-full h-full"
 					/>
 				</div>
 			</div>
 		</div>
-		<div class="left-sidebar w-96 h-full">
+		<div class="left-sidebar md:w-72 lg:w-96 h-full">
 			<Chats v-if="leftContent == 'chats'" />
 			<Friends
 				v-if="leftContent == 'friends'"
