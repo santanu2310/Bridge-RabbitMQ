@@ -1,7 +1,11 @@
+import logging
 from fastapi import Request, WebSocket
-from motor.motor_asyncio import AsyncIOMotorClient
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
 from pymongo import MongoClient
 from app.core.config import settings
+
+logging.basicConfig(level="DEBUG")
+logger = logging.getLogger(__name__)
 
 
 class BaseDatabase:
@@ -13,6 +17,21 @@ class BaseDatabase:
         self.friends = self.db.get_collection("friends")
         self.conversation = self.db.get_collection("conversation")
         self.message = self.db.get_collection("message")
+
+        self._collection_names = {
+            "user_auth",
+            "user_profile",
+            "friend_request",
+            "friends",
+            "conversation",
+            "message",
+        }
+
+    def get_collection(self, name: str) -> AsyncIOMotorCollection:
+        """Dynamically fetch a collection by name, if defined."""
+        if name not in self._collection_names:
+            raise ValueError(f"Collection '{name}' is not defined.")
+        return getattr(self, name)
 
 
 class AsyncDatabase(BaseDatabase):
@@ -31,6 +50,7 @@ class SyncDatabase(BaseDatabase):
 
 
 def create_async_client() -> AsyncIOMotorClient:
+    logger.critical("crate async client is being used")
     return AsyncIOMotorClient(settings.MONGOD_URL)
 
 
