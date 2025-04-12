@@ -44,3 +44,14 @@ export interface TempFile {
 	id: string;
 	file: File;
 }
+
+export interface profileMedia {
+	id: string;
+	avatar: Blob | null;
+	banner: Blob | null;
+}
+
+export interface profileMediaUrls {
+	avatar: string | null;
+	banner: string | null;
+}

@@ -1,13 +1,16 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import axios from "axios";
 import { useAuthStore } from "./auth";
 import { indexedDbService } from "@/services/indexDbServices";
 import { mapResponseToUser, type User } from "@/types/User";
 import { useUserStore } from "./user";
 import type { Conversation } from "@/types/Conversation";
 import { mapResponseToMessage, type Message } from "@/types/Message";
-import type { FriendRequest, UserBrief } from "@/types/Commons";
+import type {
+	FriendRequest,
+	profileMedia,
+	profileMediaUrls,
+} from "@/types/Commons";
 
 export const useFriendStore = defineStore("friend", () => {
 	const friends = ref<User[]>([]);
@@ -23,6 +26,7 @@ export const useFriendStore = defineStore("friend", () => {
 
 	async function listFriend() {
 		try {
+			// Get cached friend records from IndexedDB
 			const result: { newlyCreated: boolean; objects: User[] } =
 				(await indexedDbService.getAllRecords("friends")) as {
 					newlyCreated: boolean;
@@ -44,12 +48,19 @@ export const useFriendStore = defineStore("friend", () => {
 			});
 
 			if (response.status === 200) {
-				console.log(response.data);
 				const updatedFriend: User[] = await Promise.all(
 					response.data.map(async (data: object) => {
+						// Convert raw response data to a User object.
 						const user = mapResponseToUser(data);
-						friends.value.push(user);
+						// Update the user record in IndexedDB.
 						await indexedDbService.updateRecord("friends", user);
+
+						const mediaUrls = await storeProfileMediaBlob(user.id, {
+							avatar: user.profilePicUrl,
+							banner: user.banner,
+						});
+						user.profilePicUrl = mediaUrls!.avatar;
+						user.banner = mediaUrls!.banner;
 
 						return user;
 					})
@@ -67,8 +78,8 @@ export const useFriendStore = defineStore("friend", () => {
 					});
 				}
 
+				// If at least one friend was updated, update the last updated timestamp.
 				if (updatedFriend.length > 0) {
-					console.log("data is there");
 					localStorage.setItem(
 						"lastUpdated",
 						new Date().toISOString()
@@ -76,6 +87,7 @@ export const useFriendStore = defineStore("friend", () => {
 				}
 			}
 
+			// Sort the friends array on fullName
 			friends.value.sort((a, b) => {
 				const aName = a.fullName || "";
 				const bName = b.fullName || "";
@@ -117,19 +129,19 @@ export const useFriendStore = defineStore("friend", () => {
 				withCredentials: true,
 			});
 
-			console.log(response)
+			console.log(response);
 
 			if (response.status == 200) {
 				const convResponse: Conversation = {
 					id: response.data.id,
 					participant: response.data.participants.find(
-							(id:string) => id != userStore.user.id
-						) as string,		//It shoud be participants
+						(id: string) => id != userStore.user.id
+					) as string, //It shoud be participants
 					startDate: response.data.start_date,
 					lastMessageDate: response.data.last_message_date,
 				};
 
-				console.log(convResponse)
+				console.log(convResponse);
 				//Add the conversation to indesedDb and to local variable
 				await indexedDbService.addRecord("conversation", convResponse);
 				if (
@@ -144,7 +156,7 @@ export const useFriendStore = defineStore("friend", () => {
 					mapResponseToMessage(msg)
 				);
 
-				console.log("old messages", oldMessages)
+				console.log("old messages", oldMessages);
 				indexedDbService.batchUpsert("message", oldMessages);
 
 				return oldMessages;
@@ -172,6 +184,57 @@ export const useFriendStore = defineStore("friend", () => {
 			}
 		} catch (error) {
 			console.error("Failed to fetch online friend : ", error);
+		}
+	}
+
+	/**
+	 * Fetches the avatar and banner media URLs for a given friend ID.
+	 * Downloads the media from secure URLs, converts them to object URLs,
+	 * stores the original blobs in IndexedDB, and returns media preview URLs.
+	 *
+	 * @param id - The friend's unique identifier
+	 * @param data - profileMediaUrls which contain aws presigned urls
+	 * @returns An object containing avatar and banner preview URLs (or null values), or undefined if the call fails
+	 */
+	async function storeProfileMediaBlob(
+		id: string,
+		data: profileMediaUrls
+	): Promise<profileMediaUrls | null> {
+		try {
+			let profileMediaData: profileMedia = {
+				id: id,
+				avatar: null,
+				banner: null,
+			};
+
+			let mediaUrls: profileMediaUrls = {
+				avatar: null,
+				banner: null,
+			};
+			if (data.avatar == null && data.banner == null) return null;
+
+			if (data.avatar) {
+				const avatar = await fetch(data.avatar);
+				const avatarBlob = await avatar.blob();
+				mediaUrls.avatar = URL.createObjectURL(avatarBlob);
+
+				profileMediaData.avatar = avatarBlob;
+			}
+
+			if (data.banner) {
+				const banner = await fetch(data.banner);
+				const bannerBlob = await banner.blob();
+				mediaUrls.banner = URL.createObjectURL(bannerBlob);
+
+				profileMediaData.banner = bannerBlob;
+			}
+
+			indexedDbService.addRecord("profileMedia", profileMediaData);
+
+			return mediaUrls;
+		} catch (error) {
+			console.error("getProfileMedia encountered an error:", error);
+			return null;
 		}
 	}
 
@@ -208,5 +271,6 @@ export const useFriendStore = defineStore("friend", () => {
 		getInitialOnlineStatus,
 		addFriend,
 		getPendingFriendRequests,
+		storeProfileMediaBlob,
 	};
 });

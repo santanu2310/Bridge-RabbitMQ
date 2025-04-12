@@ -5,6 +5,7 @@ export interface User {
 	email: string;
 	bio: string | null;
 	profilePicUrl: string | null;
+	banner: string | null;
 	location: string | null;
 	joinedDate: string | null;
 }
@@ -18,6 +19,7 @@ export function mapResponseToUser(response: object): User {
 		bio: "bio",
 		location: "location",
 		profilePicUrl: "profile_picture",
+		banner: "banner_picture",
 		joinedDate: "created_at",
 	};
 

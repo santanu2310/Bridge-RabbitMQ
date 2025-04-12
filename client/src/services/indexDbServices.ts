@@ -24,6 +24,9 @@ const STORES = [
 	{
 		name: "tempFile",
 	},
+	{
+		name: "profileMedia",
+	},
 ];
 
 class IndexedDbService {
@@ -96,7 +99,11 @@ class IndexedDbService {
 			};
 
 			request.onerror = () => {
-				rejects(new Error(`Failed to add record to the store :${ request.error}`));
+				rejects(
+					new Error(
+						`Failed to add record to the store :${request.error}`
+					)
+				);
 			};
 		});
 	}
