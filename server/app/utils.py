@@ -1,5 +1,6 @@
 import os
 import uuid
+from typing import Optional
 from fastapi import HTTPException, status
 from passlib.context import CryptContext  # type: ignore
 import boto3  # type: ignore
@@ -64,8 +65,11 @@ def create_presigned_upload_url():
 
 
 def create_presigned_download_url(
-    key: str,
+    key: Optional[str],
 ):
+    if not key:
+        return
+
     # Generate a S3 Slient
     s3_client = boto3.client(
         "s3",
