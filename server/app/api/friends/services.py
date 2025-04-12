@@ -1,3 +1,4 @@
+import logging
 from bson import ObjectId
 from datetime import datetime
 from typing import Optional, List, Dict, Any, Tuple
@@ -5,6 +6,9 @@ from fastapi import HTTPException, status
 from app.core.schemas import Friends, Friends_Status, UserOut
 from app.core.db import AsyncDatabase
 from app.api.user.services import get_full_user
+from app.utils import create_presigned_download_url
+
+logger = logging.getLogger(__name__)
 
 
 async def are_friends(
@@ -88,9 +92,22 @@ async def get_friends_list(
         cursor = db.friends.aggregate(pipeline)
         friends = await cursor.to_list(length=None)
 
-        return [UserOut(**user) for user in friends]
+        friends_list: List[UserOut] = []
+
+        for user in friends:
+            user_out = UserOut(**user)
+            user_out.profile_picture = create_presigned_download_url(
+                user_out.profile_picture
+            )
+            user_out.banner_picture = create_presigned_download_url(
+                user_out.banner_picture
+            )
+
+            friends_list.append(user_out)
+        return friends_list
 
     except Exception as e:
+        logger.critical(f"Internal Server Error : {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="error fetching users list",
@@ -139,7 +156,5 @@ async def _get_friend(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"You don't have friend with friend_id {friend_object_id}",
         )
-    print(friend_doc)
-    print(f"{friend_doc['friend_id']=}")
 
     return await get_full_user(db=db, user_id=friend_doc["friend_id"])

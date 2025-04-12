@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from bson import ObjectId
 from typing_extensions import Annotated
 from enum import Enum, unique
-from pydantic import BaseModel, Field, EmailStr, FileUrl
+from pydantic import BaseModel, Field, EmailStr
 from pydantic_core import core_schema
 
 
@@ -75,7 +75,9 @@ class MediaType(str, Enum):
 
 
 class UserAuth(BaseModel):
-    id: Optional[PyObjectId] = Field(validation_alias="_id", default=None)
+    id: Optional[PyObjectId] = Field(
+        validation_alias="_id", default=None, serialization_alias="_id"
+    )
     username: str
     email: EmailStr
     password: str
@@ -91,12 +93,14 @@ class UserAuthOut(BaseModel):
 
 
 class UserProfile(BaseModel):
-    id: Optional[PyObjectId] = Field(validation_alias="_id", default=None)
+    id: Optional[PyObjectId] = Field(
+        validation_alias="_id", default=None, serialization_alias="_id"
+    )
     auth_id: PyObjectId
     full_name: str
     bio: str | None = None
     profile_picture: str | None = None
-    banner_picture: Optional[FileUrl] = None
+    banner_picture: Optional[str] = None
     location: str | None = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -123,7 +127,7 @@ class UserOut(BaseModel):
     email: EmailStr
     bio: str | None = None
     profile_picture: str | None = None
-    banner_picture: Optional[FileUrl] = None
+    banner_picture: Optional[str] = None
     location: str | None = None
     created_at: datetime | None = None
 
@@ -213,7 +217,7 @@ class ConversationResponse(Conversation):
 
 class FileData(BaseModel):
     temp_file_id: Optional[str] = None
-    name: Optional[str] = None
+    name: str
 
 
 class MessageData(BaseModel):
@@ -288,3 +292,8 @@ SyncSocketMessage = Union[
 class SyncPacket(BaseModel):
     type: PacketType
     data: Optional[SyncSocketMessage] = Field(default=None, discriminator="type")
+
+
+class UserProfileMedia(BaseModel):
+    avatar: Optional[str] = None
+    banner: Optional[str] = None
