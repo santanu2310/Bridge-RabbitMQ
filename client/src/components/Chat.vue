@@ -5,9 +5,11 @@
 	import { indexedDbService } from "@/services/indexDbServices";
 	import { getInitials } from "@/utils/StringUtils";
 	import { useUserStore } from "@/stores/user";
+	import { useFriendStore } from "@/stores/friend";
 	import { formatDateDifference } from "@/utils/DateUtils";
 
 	const userStore = useUserStore();
+	const friendStore = useFriendStore();
 	const isOnline = userStore.useOnlineStatusManager().isOnline;
 
 	// Define props for component
@@ -28,10 +30,7 @@
 
 	// Fetch user data on component mount
 	onMounted(async () => {
-		user.value = (await indexedDbService.getRecord(
-			"friends",
-			props.userId
-		)) as User;
+		user.value = friendStore.friends[props.userId];
 	});
 
 	// Function to set current conversation in user store

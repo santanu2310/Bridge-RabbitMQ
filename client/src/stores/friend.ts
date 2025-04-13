@@ -13,7 +13,7 @@ import type {
 } from "@/types/Commons";
 
 export const useFriendStore = defineStore("friend", () => {
-	const friends = ref<User[]>([]);
+	const friends = ref<Record<string, User>>({});
 	const friendRequests = ref<FriendRequest[]>([]);
 
 	const lastFriendsUpdate = localStorage.getItem("lastUpdated");
@@ -33,7 +33,7 @@ export const useFriendStore = defineStore("friend", () => {
 					objects: User[];
 				};
 
-			friends.value = result.objects;
+			let friends_list: User[] = result.objects;
 
 			let url = "friends/get-friends";
 
@@ -67,15 +67,36 @@ export const useFriendStore = defineStore("friend", () => {
 				);
 
 				//update the original fiends
-				if (friends.value) {
+				if (friends_list) {
 					const updatedFriendMap = new Map(
 						updatedFriend.map((user) => [user.id, user])
 					);
-					friends.value.forEach((user: User) => {
-						if (updatedFriendMap.has(user.id)) {
-							Object.assign(user, updatedFriendMap.get(user.id)!);
-						}
-					});
+
+					await Promise.all(
+						friends_list.map(async (user: User) => {
+							// Retrive blob object from indesedDB and create there urls
+							const profileMeida =
+								(await indexedDbService.getRecord(
+									"profileMedia",
+									user.id
+								)) as profileMedia;
+
+							user.profilePicUrl = profileMeida.avatar
+								? URL.createObjectURL(profileMeida.avatar)
+								: null;
+							user.banner = profileMeida.banner
+								? URL.createObjectURL(profileMeida.banner)
+								: null;
+
+							// Over write the friends data if there any changes
+							if (updatedFriendMap.has(user.id)) {
+								Object.assign(
+									user,
+									updatedFriendMap.get(user.id)!
+								);
+							}
+						})
+					);
 				}
 
 				// If at least one friend was updated, update the last updated timestamp.
@@ -87,12 +108,11 @@ export const useFriendStore = defineStore("friend", () => {
 				}
 			}
 
-			// Sort the friends array on fullName
-			friends.value.sort((a, b) => {
-				const aName = a.fullName || "";
-				const bName = b.fullName || "";
-				return aName.localeCompare(bName);
-			});
+			// Stor the friends list in fiends Record
+			friends.value = friends_list.reduce((acc, user) => {
+				acc[user.id] = user;
+				return acc;
+			}, {} as Record<string, User>);
 		} catch (error) {
 			console.error(error);
 		}
@@ -247,7 +267,7 @@ export const useFriendStore = defineStore("friend", () => {
 			const friend = mapResponseToUser(user_response.data);
 
 			await indexedDbService.addRecord("friends", friend);
-			friends.value.push(friend);
+			friends.value[friend.id] = friend;
 		}
 	}
 

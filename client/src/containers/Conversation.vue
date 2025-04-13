@@ -1,5 +1,5 @@
 <script setup lang="ts">
-	import { computed, ref, onMounted } from "vue";
+	import { computed, ref, onMounted, watch, nextTick } from "vue";
 
 	import EmojiPicker from "vue3-emoji-picker";
 	import "vue3-emoji-picker/css";
@@ -10,6 +10,7 @@
 
 	import { useMessageStore } from "@/stores/message";
 	import { useUserStore } from "@/stores/user";
+	import { useFriendStore } from "@/stores/friend";
 
 	import IconSearch from "@/components/icons/IconSearch.vue";
 	import IconCall from "@/components/icons/IconCall.vue";
@@ -26,18 +27,20 @@
 
 	const messageStore = useMessageStore();
 	const userStore = useUserStore();
+	const friendStore = useFriendStore();
 	const friend = ref<User | null>(null);
 
 	onMounted(async () => {
-		friend.value = (await indexedDbService.getRecord(
-			"friends",
-			userStore.currentConversation?.receiverId as string
-		)) as User;
+		friend.value =
+			friendStore.friends[
+				userStore.currentConversation?.receiverId as string
+			];
 	});
 
 	const text = ref<string>("");
 	const selectedFile = ref<File | null>(null);
 
+	const messagesContainer = ref<HTMLElement | null>(null);
 	const inputReference = ref<HTMLInputElement | null>(null);
 	const showEmojiBoard = ref(false);
 	const myId = userStore.user.id;
@@ -81,6 +84,15 @@
 		});
 	});
 
+	watch(
+		() => messages.value.length,
+		() => {
+			nextTick(() => {
+				scrollToBottom();
+			});
+		}
+	);
+
 	function onSelectEmoji(emoji: object) {
 		text.value = text.value + (emoji as { i: string }).i;
 		console.log((emoji as { i: string }).i);
@@ -116,6 +128,15 @@
 			}
 		}
 	}
+
+	const scrollToBottom = () => {
+		if (messagesContainer.value) {
+			messagesContainer.value.scrollTo({
+				top: messagesContainer.value.scrollHeight,
+				behavior: "smooth",
+			});
+		}
+	};
 </script>
 <template>
 	<div class="w-full h-full flex flex-col">
@@ -183,7 +204,10 @@
 				</button>
 			</div>
 		</div>
-		<div class="w-full px-3 overflow-auto flex-grow">
+		<div
+			class="w-full px-3 overflow-auto flex-grow"
+			ref="messagesContainer"
+		>
 			<div class="flex flex-col justify-end">
 				<div
 					class="w-full h-fit p-2 flex flex-col"

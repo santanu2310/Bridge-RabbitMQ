@@ -1,8 +1,9 @@
 <script setup lang="ts">
-	import { ref } from "vue";
+	import { computed, ref } from "vue";
 	import type { Ref } from "vue";
 	import { useFriendStore } from "@/stores/friend";
 	import { useAuthStore } from "@/stores/auth";
+	import type { User } from "@/types/User";
 	import Friend from "@/components/Friend.vue";
 	import IconBell from "@/components/icons/IconBell.vue";
 
@@ -13,6 +14,15 @@
 	const message: Ref<string | null> = ref(null);
 
 	const emit = defineEmits(["freindRequest"]);
+
+	const friends = computed(() => {
+		//Sort the friends object to a sorted array
+		return Object.values(friendStore.friends).sort((a, b) => {
+			const aName = a.fullName || "";
+			const bName = b.fullName || "";
+			return aName.localeCompare(bName);
+		});
+	});
 
 	const currentInitial = ref("");
 	function changedInitial(name: string): boolean {
@@ -64,7 +74,7 @@
 		</div>
 		<div></div>
 		<div class="w-full h-auto">
-			<div class="w-full my-3 pl-6" v-for="user in friendStore.friends">
+			<div class="w-full my-3 pl-6" v-for="user in friends">
 				<div
 					v-if="changedInitial(user.fullName ? user.fullName : '')"
 					class="w-full h-8 mt-2 flex items-center"
@@ -82,7 +92,7 @@
 				<div class="w-full pr-6">
 					<Friend
 						:id="user.id as string"
-						:display-name="user.userName as string"
+						:display-name="user.fullName as string"
 						:img-url="user.profilePicUrl"
 					/>
 				</div>

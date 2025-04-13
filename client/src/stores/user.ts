@@ -34,6 +34,7 @@ export const useUserStore = defineStore("user", () => {
 		bio: "",
 		location: "",
 		profilePicUrl: "",
+		banner: "",
 		joinedDate: "",
 	});
 
@@ -89,11 +90,9 @@ export const useUserStore = defineStore("user", () => {
 			url: `users/download-url?key=${key}`,
 		});
 
-		console.log(response);
 		if (response.status === 200) {
 			const imageResponse = await fetch(response.data);
 			const blob = await imageResponse.blob();
-			console.log(URL.createObjectURL(blob));
 			return URL.createObjectURL(blob);
 		}
 	}
