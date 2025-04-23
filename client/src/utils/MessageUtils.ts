@@ -19,7 +19,14 @@ export function updateMessageInState(message: Message, tempId?: string | null) {
 		// Update the message in the conversation variable
 		for (let i = messages.length - 1; i >= 0; i--) {
 			if (messages[i].id === messageId) {
-				messages[i] = Object.assign({}, toRaw(messages[i]), message);
+				// messages[i] = Object.assign({}, toRaw(messages[i]), message);
+				const target = messages[i];
+				const newData = toRaw(message);
+
+				// Only update the fields that exist on the new message
+				(Object.keys(newData) as (keyof Message)[]).forEach((key) => {
+					target[key] = newData[key] as any;
+				});
 				break;
 			}
 		}

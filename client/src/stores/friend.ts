@@ -38,7 +38,7 @@ export const useFriendStore = defineStore("friend", () => {
 			let url = "friends/get-friends";
 
 			// Add the lastupdated date
-			if (!result.newlyCreated && lastFriendsUpdate) {
+			if (!result.newlyCreated || !lastFriendsUpdate) {
 				url += `?updateAfter=${lastFriendsUpdate}`;
 			}
 

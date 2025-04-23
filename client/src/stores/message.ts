@@ -19,7 +19,7 @@ import {
 import { useUserStore } from "./user";
 import { useSyncStore } from "./background_sync";
 import { useAuthStore } from "./auth";
-import { addMessageInState,updateMessageInState } from "@/utils/MessageUtils";
+import { addMessageInState, updateMessageInState } from "@/utils/MessageUtils";
 import { removeExtension } from "@/utils/StringUtils";
 
 export const useMessageStore = defineStore("message", () => {
@@ -35,7 +35,6 @@ export const useMessageStore = defineStore("message", () => {
 
 	//handle receiving message
 	socket.on("message", async (msg) => {
-		console.log(msg)
 		// Validate required field
 		if (
 			!msg.id ||
@@ -97,7 +96,6 @@ export const useMessageStore = defineStore("message", () => {
 		}
 
 		// Remove temp messagee(only for the sender)
-		console.log(message);
 		if (message.senderId == userStore.user.id) {
 			if (msg.temp_id) {
 				await indexedDbService.deleteRecord("message", msg.temp_id);
@@ -119,12 +117,10 @@ export const useMessageStore = defineStore("message", () => {
 				],
 				status: MessageStatus.received,
 			};
-			
-			console.log("sending sync message", syncMessge)
-			syncStore.sendMessage(syncMessge);
-			addMessageInState(message)
-		}
 
+			syncStore.sendMessage(syncMessge);
+			addMessageInState(message);
+		}
 	});
 
 	async function sendMessage(message: string) {
