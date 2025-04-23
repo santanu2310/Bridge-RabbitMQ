@@ -25,6 +25,7 @@ export const useUserStore = defineStore("user", () => {
 
 	// Reactive object to track user online status
 	const userStatuses = ref<Record<string, boolean>>({});
+	const isChatVisible = ref<boolean>(false);
 
 	const user = reactive<User>({
 		id: "",
@@ -101,6 +102,7 @@ export const useUserStore = defineStore("user", () => {
 		user,
 		conversations,
 		currentConversation,
+		isChatVisible,
 		getUser,
 		useOnlineStatusManager,
 	};

@@ -2,7 +2,6 @@
 	import { onMounted, ref } from "vue";
 	import type { User } from "@/types/User";
 	import type { Message } from "@/types/Message";
-	import { indexedDbService } from "@/services/indexDbServices";
 	import { getInitials } from "@/utils/StringUtils";
 	import { useUserStore } from "@/stores/user";
 	import { useFriendStore } from "@/stores/friend";
@@ -39,6 +38,7 @@
 			receiverId: props.userId,
 			convId: props.id,
 		};
+		userStore.isChatVisible = true;
 	}
 </script>
 
@@ -51,7 +51,9 @@
 		<div
 			class="w-auto h-7 aspect-square flex items-center justify-center relative"
 		>
-			<div class="w-full h-full overflow-hidden rounded-full">
+			<div
+				class="w-full h-full aspect-square overflow-hidden rounded-full"
+			>
 				<img
 					v-if="user?.profilePicUrl"
 					:src="user?.profilePicUrl"

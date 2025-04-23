@@ -98,7 +98,7 @@
 					</button>
 				</div>
 				<div
-					class="w-2/5 aspect-square absolute left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full overflow-hidden"
+					class="max-w-40 lg:w-2/5 aspect-square absolute left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full overflow-hidden"
 				>
 					<div class="w-full h-full relative">
 						<label
@@ -122,7 +122,7 @@
 						/>
 						<img
 							class="w-full h-full object-cover relative delay-300 hover:-z-10"
-							:src="userStore.user.profilePicUrl"
+							:src="userStore.user.profilePicUrl ?? undefined"
 							alt=""
 						/>
 					</div>

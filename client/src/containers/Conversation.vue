@@ -5,7 +5,7 @@
 	import "vue3-emoji-picker/css";
 
 	import { formatDateDifference } from "@/utils/DateUtils";
-	import { indexedDbService } from "@/services/indexDbServices";
+	import IconArrow from "@/components/icons/IconArrow.vue";
 	import type { User } from "@/types/User";
 
 	import { useMessageStore } from "@/stores/message";
@@ -15,7 +15,6 @@
 	import IconSearch from "@/components/icons/IconSearch.vue";
 	import IconCall from "@/components/icons/IconCall.vue";
 	import IconVideoCall from "@/components/icons/IconVideoCall.vue";
-	import IconAbout from "@/components/icons/IconAbout.vue";
 	import IconAdd from "@/components/icons/IconAdd.vue";
 	import IconSticker from "@/components/icons/IconSticker.vue";
 	import IconMic from "@/components/icons/IconMic.vue";
@@ -137,35 +136,56 @@
 			});
 		}
 	};
+
+	function backConversation() {
+		if (window.innerWidth > 1024) return;
+
+		userStore.isChatVisible = false;
+		console.log(userStore.isChatVisible);
+		userStore.currentConversation = null;
+	}
 </script>
 <template>
 	<div class="w-full h-full flex flex-col">
 		<div
 			class="w-full h-20 px-2 flex items-center justify-between bg-color-background-mute"
 		>
-			<div class="h-fit py-4 mx-4 flex items-center" v-if="friend">
-				<div class="h-10 overflow-hidden aspect-square rounded-full">
-					<img
-						v-if="friend.profilePicUrl"
-						:src="friend.profilePicUrl"
-						alt=""
-						class="w-full h-full object-cover"
-					/>
-					<div
-						v-else
-						class="w-full h-full flex items-center justify-center bg-red-500"
-					>
-						<span
-							class="w-fit h-fit block text-white text-sm font-semibold"
-							>{{
-								getInitials(
-									friend.fullName ||
-										(friend.userName as string)
-								)
-							}}</span
-						>
+			<div
+				class="h-fit py-4 ml-0 mr-4 lg:ml-4 flex items-center"
+				v-if="friend"
+			>
+				<button
+					class="w-fit h-10 p-[2px] lg:p-0 overflow-hidden flex flex-nowrap rounded-[1.25rem] lg:aspect-square lg:rounded-full bg-color-background-soft cursor-pointer"
+					@click="backConversation()"
+				>
+					<div class="w-4 h-full text-white block lg:hidden">
+						<IconArrow :size="100" />
 					</div>
-				</div>
+					<div
+						class="h-full aspect-square overflow-hidden rounded-full"
+					>
+						<img
+							v-if="friend.profilePicUrl"
+							:src="friend.profilePicUrl"
+							alt=""
+							class="w-full h-full object-cover"
+						/>
+						<div
+							v-else
+							class="w-full h-full flex items-center justify-center bg-red-500"
+						>
+							<span
+								class="w-fit h-fit block text-white text-sm font-semibold"
+								>{{
+									getInitials(
+										friend.fullName ||
+											(friend.userName as string)
+									)
+								}}</span
+							>
+						</div>
+					</div>
+				</button>
 				<div class="h-fit ml-3 flex flex-col">
 					<span class="text-base font-medium">{{
 						friend.fullName || friend.userName
@@ -192,20 +212,10 @@
 				>
 					<IconVideoCall />
 				</button>
-				<button
-					class="h-8 mx-2 aspect-square bg-transparent border-none flex items-center justify-center"
-				>
-					<IconAbout />
-				</button>
-				<button
-					class="h-8 mx-2 aspect-square bg-transparent border-none flex items-center justify-center"
-				>
-					<IconMore />
-				</button>
 			</div>
 		</div>
 		<div
-			class="w-full px-3 overflow-auto flex-grow"
+			class="w-full px-1 sm:px-3 overflow-auto flex-grow"
 			ref="messagesContainer"
 		>
 			<div class="flex flex-col justify-end">
