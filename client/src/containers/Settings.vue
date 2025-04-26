@@ -1,5 +1,5 @@
 <script setup lang="ts">
-	import { ref } from "vue";
+	import { ref, watch } from "vue";
 	import IconPencil from "@/components/icons/IconPencil.vue";
 	import EditableField from "@/components/EditableField.vue";
 	import NonEditableField from "@/components/NonEditableField.vue";
@@ -8,6 +8,7 @@
 	import { useUserStore } from "@/stores/user";
 	import { useAuthStore } from "@/stores/auth";
 	import IconCamera from "@/components/icons/IconCamera.vue";
+	import IconBuffer from "@/components/icons/IconBuffer.vue";
 
 	const userStore = useUserStore();
 	const authStore = useAuthStore();
@@ -16,6 +17,7 @@
 
 	const profileInputReference = ref<HTMLInputElement | null>(null);
 	const editProfilePopup = ref(false);
+	const loadingProfilePic = ref(false);
 
 	const isVisible = ref<string | null>("p_info");
 	function changeVisibility(v_value: string) {
@@ -38,6 +40,7 @@
 
 				if (response.status === 200) {
 					console.log(file);
+					loadingProfilePic.value = true;
 					response.data.fields["file"] = file;
 
 					// Upload the file to aws
@@ -74,6 +77,14 @@
 		profileInputReference.value = null;
 		editProfilePopup.value = false;
 	};
+
+	watch(
+		() => userStore.user.profilePicUrl,
+		(newPic, oldPic) => {
+			if (newPic == oldPic) return;
+			loadingProfilePic.value = false;
+		}
+	);
 </script>
 
 <template>
@@ -101,7 +112,13 @@
 					class="max-w-40 lg:w-2/5 aspect-square absolute left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full overflow-hidden"
 				>
 					<div class="w-full h-full relative">
+						<span
+							class="w-full h-full flex items-center justify-center absolute bg-slate-900 bg-opacity-70 z-10"
+							v-if="loadingProfilePic"
+							><IconBuffer />
+						</span>
 						<label
+							v-else
 							for="profilepic"
 							class="w-full h-full flex flex-col items-center justify-center absolute top-0 left-0 bg-slate-900 bg-opacity-70 text-sm text-center delay-300 hover:z-10"
 						>

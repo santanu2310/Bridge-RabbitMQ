@@ -1,5 +1,4 @@
 import { defineStore } from "pinia";
-import { toRaw } from "vue";
 import { Socket } from "@/services/socektServices";
 import { type Conversation } from "@/types/Conversation";
 import { mapResponseToMessage, type Message } from "@/types/Message";
@@ -81,6 +80,13 @@ export const useSyncStore = defineStore("background_sync", () => {
 			case "add_friend":
 				console.log(msg);
 				friendStore.addFriend(msg.freind_doc_id);
+
+			case "profile_media":
+				console.log(msg);
+				if (msg.media_type == "profile_picture") {
+					userStore.user.profilePicUrl =
+						(await userStore.getProfileUrl(msg.media_id)) ?? null;
+				}
 		}
 	});
 
