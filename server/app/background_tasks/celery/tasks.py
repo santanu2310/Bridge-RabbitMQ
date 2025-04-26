@@ -1,19 +1,19 @@
-import io
-from typing import Union
 from datetime import datetime
 from bson import ObjectId
 import logging
 from botocore.exceptions import ClientError  # type: ignore
-from PIL import Image
 from app.core.config import create_celery_client, settings
 from app.core.schemas import Message, MediaType, UserProfile, ProfileMediaUpdate
 from app.core.db import create_sync_client, SyncDatabase
 from app.core.message_broker import (
     publish_bloking_message,
+    create_bloking_rabbit_connection,
 )
 from app.utils import get_file_extension
 from pymongo import ReturnDocument
 from app.background_tasks.celery.dependency import DependencyManager, Dependency
+
+from .services import process_image_to_aspect
 
 
 dependency = DependencyManager()
@@ -95,7 +95,7 @@ def process_media_message(message_id: str):
 
 
 @celery_app.task
-def process_profile_media(file_id: str, user_id: str, media_type: MediaType):
+def process_profile_media(file_id: str, user_id: str, media_type: str):
     db = dependency.get_dependency(Dependency.db)
 
     test_db = dependency.get_dependency(Dependency.queue)
@@ -111,33 +111,22 @@ def process_profile_media(file_id: str, user_id: str, media_type: MediaType):
         )
         image_data = obj["Body"].read()
 
-        # Open the image using PIL.
-        image: Union[Image.Image] = Image.open(io.BytesIO(image_data))
-        width, height = image.size
+        target_size = [0, 0]
+        if media_type == MediaType.profile_picture.value:
+            target_size = [480, 480]
+        elif media_type == MediaType.banner_picture.value:
+            target_size = [855, 360]
+        else:
+            logger.error(f"Invalid media_type : {media_type}")
+            return
 
-        if width != height:
-            # Crop image to a square aspect ratio if the original is rectangular.
-            square_size = min(width, height)
-
-            left = (width - square_size) // 2
-            top = (height - square_size) // 2
-            right = left + square_size
-            bottom = top + square_size
-
-            image = image.crop((left, top, right, bottom))
-
-        # Change the resolution
-        target_size = (480, 480)
-        image.thumbnail(target_size)
-
-        output_buffer = io.BytesIO()
-        image.convert("RGB").save(output_buffer, format="WebP")
-
-        output_buffer.seek(0)
-        # image_bytes = output_buffer.read()
+        output_buffer = process_image_to_aspect(
+            image_data=image_data, target_size=target_size
+        )
 
         present_time = datetime.utcnow().strftime("%Y%m%dT%H%M%S")
         new_key = f"{media_type}/{user_id}{present_time}"
+
         # Step 3: Reupload the processed image back to S3.
         s3_client.upload_fileobj(
             output_buffer,
@@ -165,12 +154,15 @@ def process_profile_media(file_id: str, user_id: str, media_type: MediaType):
 
         data = message.model_dump_json(by_alias=True)
 
+        pika_conn = create_bloking_rabbit_connection()
         publish_bloking_message(
-            connection=dependency.get_dependency(Dependency.queue),
+            connection=pika_conn,
             exchange_name=settings.EXCHANGES.task_updates.value,
             topic=settings.TOPICS.media_update,
             data=data,
         )
+
+        pika_conn.close()
 
         s3_client.delete_object(
             Bucket=settings.BUCKET_NAME, Key=user_profile.profile_picture

@@ -173,10 +173,10 @@ async def add_user_image(
         process_profile_media.delay(
             data.profile_picture_id, str(user.id), MediaType.profile_picture.value
         )
-    # else:
-    #     process_profile_media.delay(
-    #         data.profile_picture_id, str(user.id), MediaType.banner_picture.value
-    #     )
+    else:
+        process_profile_media.delay(
+            data.banner_picture_id, str(user.id), MediaType.banner_picture.value
+        )
 
     return JSONResponse(
         {"message": "Profile picture is being processed"},

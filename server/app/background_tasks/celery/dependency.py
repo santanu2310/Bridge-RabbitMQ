@@ -22,7 +22,7 @@ class DependencyManager(Task):
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance._initialize_connections()
+            # cls._instance._initialize_connections()
         return cls._instance
 
     def _initialize_connections(self):
@@ -53,7 +53,12 @@ class DependencyManager(Task):
         :return: Dependency connection details
         """
         if name.value not in self._connections:
-            raise ValueError(f"Dependency {name.value} not initialized")
+            try:
+                self._initialize_mongodb()
+                self._initialize_s3()
+            except Exception as e:
+                logging.error(f"Connection initialization failed: {e}")
+                raise
 
         if name.value == Dependency.db.value:
             return self._connections[Dependency.db.value]["db"]
