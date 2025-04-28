@@ -56,6 +56,9 @@ export const useUserStore = defineStore("user", () => {
 				user.profilePicUrl = (await getProfileUrl(
 					response.data.profile_picture
 				)) as string;
+				user.banner = (await getProfileUrl(
+					response.data.banner_picture
+				)) as string;
 				user.joinedDate = response.data.created_at;
 			}
 		} catch (error) {
@@ -69,7 +72,6 @@ export const useUserStore = defineStore("user", () => {
 		return {
 			// Check if user is online
 			isOnline: (userId: string) => {
-				console.log(userStatuses.value);
 				return userStatuses.value[userId] || false;
 			},
 
@@ -105,5 +107,6 @@ export const useUserStore = defineStore("user", () => {
 		isChatVisible,
 		getUser,
 		useOnlineStatusManager,
+		getProfileUrl,
 	};
 });

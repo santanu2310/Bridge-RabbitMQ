@@ -16,6 +16,7 @@
 	const user = userStore.user;
 
 	const profileInputReference = ref<HTMLInputElement | null>(null);
+	const bannerInputReference = ref<HTMLInputElement | null>(null);
 	const editProfilePopup = ref(false);
 	const loadingProfilePic = ref(false);
 
@@ -24,7 +25,18 @@
 		isVisible.value = isVisible.value != v_value ? v_value : null;
 	}
 
-	const uploadProfilePic = async (file: File) => {
+	const trigerBannerUpload = async () => {
+		const file = bannerInputReference.value?.files![0];
+
+		if (!file) return;
+
+		await uploadProfileMedia(file, false);
+	};
+
+	const uploadProfileMedia = async (
+		file: File,
+		isProfilePic: boolean = true
+	) => {
 		// const file = profileInputReference.value?.files![0];
 		if (file) {
 			if (file.size > 10 * 1024 * 1024) {
@@ -36,10 +48,8 @@
 					method: "get",
 					url: "users/upload-url",
 				});
-				console.log(response);
 
 				if (response.status === 200) {
-					console.log(file);
 					loadingProfilePic.value = true;
 					response.data.fields["file"] = file;
 
@@ -53,12 +63,15 @@
 						data: response.data.fields,
 					});
 
-					console.log("status code : ", uploadResponse.status);
-
 					if (uploadResponse.status === 204) {
-						const profile_data = {
-							profile_picture_id: response.data.fields.key,
-						};
+						const profile_data = isProfilePic
+							? {
+									profile_picture_id:
+										response.data.fields.key,
+							  }
+							: {
+									banner_picture_id: response.data.fields.key,
+							  };
 
 						const messageResponse = await authStore.authAxios({
 							method: "post",
@@ -66,7 +79,7 @@
 							data: profile_data,
 						});
 
-						console.log(messageResponse);
+						// TODO : errorn need to be handled
 					}
 				}
 			}
@@ -92,7 +105,7 @@
 		<div class="w-full flex flex-col items-center">
 			<div class="w-full h-40 mb-20 relative bg-slate-900">
 				<img
-					src="https://res.cloudinary.com/omaha-code/image/upload/ar_4:3,c_fill,dpr_1.0,e_art:quartz,g_auto,h_396,q_auto:best,t_Linkedin_official,w_1584/v1561576558/mountains-1412683_1280.png"
+					:src="userStore.user.banner ?? undefined"
 					alt=""
 					class="w-full h-full object-cover opacity-50"
 				/>
@@ -102,11 +115,22 @@
 					<span class="text-xl font-semibold text-color-white"
 						>Settings</span
 					>
-					<button
+					<label
 						class="h-full aspect-square flex items-center justify-center rounded-full"
+						for="bannerpic"
 					>
 						<IconPencil />
-					</button>
+					</label>
+					<input
+						type="file"
+						name="bannerpic"
+						id="bannerpic"
+						hidden
+						max="20971520"
+						accept="image/*"
+						ref="bannerInputReference"
+						@change="trigerBannerUpload()"
+					/>
 				</div>
 				<div
 					class="max-w-40 lg:w-2/5 aspect-square absolute left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full overflow-hidden"
@@ -148,7 +172,7 @@
 							v-if="editProfilePopup"
 							:file="profileInputReference?.files![0]"
 							@close="onClose"
-							@modifiedFile="uploadProfilePic"
+							@modifiedFile="uploadProfileMedia"
 						/>
 					</Teleport>
 				</div>
