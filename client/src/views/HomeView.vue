@@ -1,6 +1,7 @@
 <script setup lang="ts">
 	import { ref, onMounted, onUnmounted } from "vue";
 
+	import IconCall from "@/components/icons/IconCall.vue";
 	import Chats from "@/containers/Chats.vue";
 	import Friends from "@/containers/Friends.vue";
 	import Profile from "@/containers/Profile.vue";
@@ -11,7 +12,9 @@
 	import AudioCall from "@/containers/AudioCall.vue";
 
 	import { useUserStore } from "@/stores/user";
+	import { useFriendStore } from "@/stores/friend";
 
+	const friendStore = useFriendStore();
 	const userStore = useUserStore();
 	const width = ref<number>(window.innerWidth);
 	console.log(width.value);
@@ -29,6 +32,11 @@
 
 	function switchContainer(n: string) {
 		leftContent.value = n;
+	}
+
+	function getFriendProfileUrl(): string | null {
+		return friendStore.friends[userStore.ongoingCall!.participants[0]]
+			.profilePicUrl;
 	}
 
 	onMounted(() => {
@@ -76,6 +84,25 @@
 			v-if="userStore.ongoingCall?.minimised == false"
 		>
 			<AudioCall v-if="userStore.ongoingCall?.minimised == false" />
+		</div>
+		<div
+			class="w-fit h-12 p-2 flex items-center justify-between absolute top-[4vh] right-[3vw] bg-primary bg-opacity-90 drop-shadow-lg rounded-full"
+		>
+			<div
+				class="h-full w-auto aspect-square rounded-full overflow-hidden"
+			>
+				<img
+					class="w-full h-full object-cover"
+					:src="getFriendProfileUrl() ?? undefined"
+					alt=""
+				/>
+			</div>
+			<span class="mx-2 text-xs font-medium">07:11</span>
+			<button
+				class="h-full w-auto aspect-square rounded-full flex items-center justify-center bg-red-500"
+			>
+				<IconCall :size="50" :rotate="135" />
+			</button>
 		</div>
 	</main>
 </template>
