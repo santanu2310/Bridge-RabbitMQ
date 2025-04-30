@@ -55,3 +55,12 @@ export interface profileMediaUrls {
 	avatar: string | null;
 	banner: string | null;
 }
+
+export interface callState {
+	callId: string;
+	participants: string[];
+	isMuted: boolean;
+	isCameraOn: boolean;
+	callStatus: "calling" | "ringing" | "in_call";
+	minimised: boolean;
+}

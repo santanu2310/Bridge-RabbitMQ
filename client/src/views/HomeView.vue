@@ -8,6 +8,7 @@
 	import Settings from "@/containers/Settings.vue";
 	import Conversation from "@/containers/Conversation.vue";
 	import Navigation from "@/containers/Navigation.vue";
+	import AudioCall from "@/containers/AudioCall.vue";
 
 	import { useUserStore } from "@/stores/user";
 
@@ -16,6 +17,7 @@
 	console.log(width.value);
 
 	const leftContent = ref<string>("chats");
+	const rightContent = ref<string | null>(null);
 
 	const onResize = () => {
 		width.value = window.innerWidth;
@@ -65,15 +67,15 @@
 		</div>
 		<div
 			v-if="userStore.isChatVisible || width > 1024"
-			:class="[
-				'message',
-				'w-full',
-				'flex',
-				'flex-grow',
-				' bg-color-background-soft',
-			]"
+			class="message w-full flex flex-grow bg-color-background-soft"
 		>
 			<Conversation v-if="userStore.currentConversation" />
+		</div>
+		<div
+			class="lg:w-[40rem] xl:w-[44rem]"
+			v-if="userStore.ongoingCall?.minimised == false"
+		>
+			<AudioCall v-if="userStore.ongoingCall?.minimised == false" />
 		</div>
 	</main>
 </template>

@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
-import { reactive, ref, computed } from "vue";
+import { reactive, ref } from "vue";
 import { useAuthStore } from "@/stores/auth";
+import type { callState } from "@/types/Commons";
 import type { User } from "@/types/User";
 import type { Message } from "@/types/Message";
 
@@ -22,6 +23,18 @@ export const useUserStore = defineStore("user", () => {
 		convId: string | null;
 		receiverId: string | null;
 	} | null>(null);
+
+	const ongoingCall = ref<callState | null>(null);
+
+	//for testing
+	ongoingCall.value = {
+		callId: "12341",
+		participants: ["67e53aca38f4e156b7384328"],
+		isMuted: false,
+		isCameraOn: false,
+		callStatus: "ringing",
+		minimised: true,
+	};
 
 	// Reactive object to track user online status
 	const userStatuses = ref<Record<string, boolean>>({});
@@ -104,6 +117,7 @@ export const useUserStore = defineStore("user", () => {
 		user,
 		conversations,
 		currentConversation,
+		ongoingCall,
 		isChatVisible,
 		getUser,
 		useOnlineStatusManager,
