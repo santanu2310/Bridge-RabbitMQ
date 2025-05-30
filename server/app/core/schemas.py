@@ -3,7 +3,8 @@ from datetime import datetime, timezone
 from bson import ObjectId
 from typing_extensions import Annotated
 from enum import Enum, unique
-from pydantic import BaseModel, Field, EmailStr
+from typing_extensions import Self
+from pydantic import BaseModel, Field, EmailStr, model_validator
 from pydantic_core import core_schema
 
 
@@ -72,6 +73,19 @@ class FileType(str, Enum):
 class MediaType(str, Enum):
     profile_picture = "profile_picture"
     banner_picture = "banner_picture"
+
+
+class CallType(str, Enum):
+    AUDIO = "audio"
+    VIDEO = "video"
+
+
+class CallStatus(str, Enum):
+    CALLING = "calling"
+    RINGING = "ringing"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+    MISSED = "missed"
 
 
 class UserAuth(BaseModel):
@@ -278,6 +292,101 @@ class ProfileMediaUpdate(BaseModel):
     media_id: str
 
 
+class Call(BaseModel):
+    id: Optional[PyObjectId] = Field(alias="_id", default=None)
+    initiator_id: PyObjectId
+    participants: List[PyObjectId]  # List of participant's user ID
+    call_type: CallType
+    status: CallStatus
+    initiated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    started_at: Optional[datetime] = None
+    ended_at: Optional[datetime] = None
+    ended_by: Optional[PyObjectId] = None  # Should be a CallParticipant's ID
+
+
+class CallParticipant(BaseModel):
+    id: Optional[PyObjectId] = Field(alias="_id", default=None)
+    call_id: PyObjectId
+    user_id: PyObjectId
+    invited_by: PyObjectId
+    joined_at: Optional[datetime]
+    left_at: Optional[datetime]
+    status: Literal["invited", "joined", "rejected"]
+
+
+class CallRecord(BaseModel):
+    call_id: PyObjectId
+    caller_id: PyObjectId
+    callee_id: PyObjectId
+    call_type: CallType
+    status: CallStatus
+    initiated_at: datetime
+    started_at: Optional[datetime]
+    ended_at: datetime
+
+
+class CallStatusUpdate(BaseModel):
+    type: Literal["status_update"]
+    call_id: PyObjectId
+    status: CallStatus
+    timestamp: datetime
+
+
+class CallEndedPayLoad(BaseModel):
+    type: Literal["user_hangup"]
+    call_id: PyObjectId
+    ended_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    reason: Literal["hang_up", "rejected", "missed", "network_error", "busy", "timeout"]
+    ended_by: PyObjectId
+
+
+class BaseWebRTCMessage(BaseModel):
+    sender_id: PyObjectId
+    receiver_id: PyObjectId
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    @model_validator(mode="after")
+    def overwrite_timestamp(self) -> Self:
+        self.timestamp = datetime.now(timezone.utc)
+        return self
+
+
+class WebRTCOffer(BaseWebRTCMessage):
+    call_id: Optional[PyObjectId]
+    type: Literal["offer"]
+    audio: bool
+    video: bool
+    description: dict  # Represents RTCSessionDescriptionInit (JSON serializable)
+
+
+class WebRTCAnswer(BaseWebRTCMessage):
+    call_id: PyObjectId
+    type: Literal["answer"]
+    audio: bool
+    video: bool
+    description: dict  # Represents RTCSessionDescriptionInit
+
+
+class WebRTCIceCandidate(BaseWebRTCMessage):
+    type: Literal["ice-candidate"]
+    candidate: dict  # Represents RTCIceCandidateInit
+
+    # Remove audio and video fields by overriding with None and exclude from schema
+    audio: Optional[bool] = None
+    video: Optional[bool] = None
+
+    class Config:
+        fields = {
+            "audio": {"exclude": True},
+            "video": {"exclude": True},
+        }
+
+
+# Union for all messages
+WebRTCMessage = Union[
+    WebRTCOffer, WebRTCAnswer, WebRTCIceCandidate, CallEndedPayLoad, CallStatusUpdate
+]
+
 # Combined Message Model for Websocket Handeling
 SyncSocketMessage = Union[
     OnlineStatusMessage,
@@ -286,6 +395,8 @@ SyncSocketMessage = Union[
     MessageStatusUpdate,
     AddFriendMessage,
     ProfileMediaUpdate,
+    WebRTCOffer,
+    WebRTCMessage,
 ]
 
 

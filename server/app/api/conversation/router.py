@@ -5,7 +5,7 @@ import logging
 from fastapi import APIRouter, Depends, status, HTTPException, Query
 from fastapi.responses import JSONResponse
 
-from app.core.schemas import UserOut, Message, ConversationResponse, Conversation
+from app.core.schemas import UserOut, Message, ConversationResponse
 from app.core.db import AsyncDatabase, get_async_database
 from app.deps import get_user_from_access_token_http
 from app.api.sync_socket.router import connections

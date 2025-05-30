@@ -11,6 +11,7 @@
 	import { useMessageStore } from "@/stores/message";
 	import { useUserStore } from "@/stores/user";
 	import { useFriendStore } from "@/stores/friend";
+	import { useCallStore } from "@/stores/call";
 
 	import IconSearch from "@/components/icons/IconSearch.vue";
 	import IconCall from "@/components/icons/IconCall.vue";
@@ -27,6 +28,7 @@
 	const messageStore = useMessageStore();
 	const userStore = useUserStore();
 	const friendStore = useFriendStore();
+	const callStore = useCallStore();
 	const friend = ref<User | null>(null);
 
 	onMounted(async () => {
@@ -202,12 +204,12 @@
 				</button>
 				<button
 					class="h-8 mx-2 aspect-square bg-transparent border-none flex items-center justify-center"
-					disabled
+					@click="callStore.makeCall(friend!.id)"
 				>
 					<IconCall />
 				</button>
 				<button
-					class="h-8 mx-2 aspect-square bg-transparent border-none flex items-center justify-center"
+					class="h-8 mx-2 aspect-square bg-transparent border-none flex items-center justify-center opacity-50"
 					disabled
 				>
 					<IconVideoCall />

@@ -5,7 +5,6 @@ from functools import wraps
 from typing import Dict, Callable, Awaitable
 from fastapi import WebSocket
 from pika import BlockingConnection, URLParameters  # type: ignore
-from pika.adapters.blocking_connection import BlockingChannel  # type: ignore
 from pika.exceptions import UnroutableError  # type: ignore
 from aio_pika import connect_robust, Message
 from aio_pika.abc import (
@@ -30,6 +29,7 @@ async def create_rabbit_connection() -> AbstractRobustConnection:
 
 def create_bloking_rabbit_connection() -> BlockingConnection:
     parameters = URLParameters(settings.CELERY_BROKER_URL)
+    parameters.heartbeat = 30
     return BlockingConnection(parameters)
 
 

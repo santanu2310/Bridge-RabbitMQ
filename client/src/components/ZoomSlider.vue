@@ -1,5 +1,5 @@
 <script setup lang="ts">
-	import { ref, onMounted, onUnmounted, defineProps } from "vue";
+	import { ref, onMounted, onUnmounted } from "vue";
 
 	type DragEvent = MouseEvent | TouchEvent;
 	const emit = defineEmits<{ (e: "change", value: number): void }>();

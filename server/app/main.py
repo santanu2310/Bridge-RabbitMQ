@@ -51,10 +51,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
 
     app.state.background_tasks = [
         asyncio.create_task(watch_friend_requests()),
-        # asyncio.create_task(watch_user_updates()),
+        asyncio.create_task(watch_user_updates()),
         asyncio.create_task(handle_online_status_update(db=async_db)),
-        # asyncio.create_task(watch_message_updates()),
-        # asyncio.create_task(distribute_published_messages()),
+        asyncio.create_task(watch_message_updates()),
+        asyncio.create_task(distribute_published_messages(db=async_db)),
         asyncio.create_task(profile_media_update_confirmation()),
     ]
 

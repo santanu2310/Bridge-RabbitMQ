@@ -1,33 +1,25 @@
 <script setup lang="ts">
-	import { ref } from "vue";
-	import EditProfilePicture from "@/components/EditProfilePicture.vue";
-	const profileInputReference = ref<HTMLInputElement | null>(null);
-	const editProfilePopup = ref(false);
+	function testRTC() {
+		const pc = new RTCPeerConnection({
+			iceServers: [
+				{ urls: "stun:stun.l.google.com:19302" },
+				{
+					urls: "turn:15.206.88.28:3478?transport=udp",
+					username: "webrtcuser1",
+					credential: "webrtcpassword1",
+				},
+			],
+		});
 
-	const onClose = () => {
-		profileInputReference.value = null;
-		editProfilePopup.value = false;
-	};
+		pc.onicecandidate = (e) => {
+			if (e.candidate) console.log(e.candidate.candidate);
+		};
+
+		pc.createDataChannel("test");
+		pc.createOffer().then((offer) => pc.setLocalDescription(offer));
+	}
 </script>
 
 <template>
-	<div class="w-full h-full relative">
-		<input
-			type="file"
-			name="profilepic"
-			id="profilepic"
-			ref="profileInputReference"
-			max="20971520"
-			accept="image/*"
-			@change="editProfilePopup = true"
-		/>
-	</div>
-	<Teleport to="body">
-		<EditProfilePicture
-			v-if="editProfilePopup"
-			:file="profileInputReference?.files![0]"
-			@close="onClose"
-		/>
-	</Teleport>
-	{{ editProfilePopup }}
+	<button @click="testRTC()">Hello</button>
 </template>

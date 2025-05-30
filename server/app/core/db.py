@@ -1,6 +1,8 @@
 import logging
 from fastapi import Request, WebSocket
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
+from motor.motor_asyncio import (
+    AsyncIOMotorClient,
+)
 from pymongo import MongoClient
 from app.core.config import settings
 
@@ -17,27 +19,28 @@ class BaseDatabase:
         self.friends = self.db.get_collection("friends")
         self.conversation = self.db.get_collection("conversation")
         self.message = self.db.get_collection("message")
+        self.call = self.db.get_collection("call")
+        self.call_participant = self.db.get_collection("call_participant")
 
-        self._collection_names = {
-            "user_auth",
-            "user_profile",
-            "friend_request",
-            "friends",
-            "conversation",
-            "message",
-        }
-
-    def get_collection(self, name: str) -> AsyncIOMotorCollection:
-        """Dynamically fetch a collection by name, if defined."""
-        if name not in self._collection_names:
-            raise ValueError(f"Collection '{name}' is not defined.")
-        return getattr(self, name)
+    # def get_collection(self, name: str) -> AsyncIOMotorCollection:
+    #     """Dynamically fetch a collection by name, if defined."""
+    #     if name not in self._collection_names:
+    #         raise ValueError(f"Collection '{name}' is not defined.")
+    #     return getattr(self, name)
 
 
 class AsyncDatabase(BaseDatabase):
     def __init__(self, client: AsyncIOMotorClient, db_name: str):
         self.db = client.get_database(db_name)
-        super().__init__(self.db)
+        # super().__init__(self.db)
+        self.user_auth = self.db.get_collection("user_auth")
+        self.user_profile = self.db.get_collection("user_profile")
+        self.friend_request = self.db.get_collection("friend_request")
+        self.friends = self.db.get_collection("friends")
+        self.conversation = self.db.get_collection("conversation")
+        self.message = self.db.get_collection("message")
+        self.call = self.db.get_collection("call")
+        self.call_participant = self.db.get_collection("call_participant")
 
     async def initialize_indexes(self):
         await self.user_profile.create_index("user_id", unique=True)

@@ -11,8 +11,6 @@ from app.core.config import settings
 from app.core.db import (
     AsyncDatabase,
     get_async_database,
-    SyncDatabase,
-    get_sync_database,
 )
 from app.deps import get_user_from_access_token_http
 from app.core.schemas import (

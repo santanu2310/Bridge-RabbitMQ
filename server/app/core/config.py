@@ -41,13 +41,12 @@ class Settings(BaseSettings):
     MONGOD_URL: str = "mongodb://mongo1:27017,mongo2:27017,mongo3:27017/?replicaSet=rs0"
     DATABASE_NAME: str = "bridge"
 
-    RABBITMQ_URL: str = "amqps://b-553fe81b-63b6-4ace-bd15-186c6428c97c.mq.ap-south-1.amazonaws.com:5671"
-    RABBITMQ_HOST: str = (
-        "b-553fe81b-63b6-4ace-bd15-186c6428c97c.mq.ap-south-1.amazonaws.com"
-    )
+    # RABBITMQ_URL: str = "amqps://b-553fe81b-63b6-4ace-bd15-186c6428c97c.mq.ap-south-1.amazonaws.com:5671"
+    # RABBITMQ_HOST: str = (
+    #     "b-553fe81b-63b6-4ace-bd15-186c6428c97c.mq.ap-south-1.amazonaws.com"
+    # )
     RABBITMQ_PORT: str = "5671"
-    # CELERY_BROKER_URL: str = "redis://redis:6379"
-    CELERY_BROKER_URL: str = ""
+    CELERY_BROKER_URL: str = "amqp://bridge-bot:Mybridge1936@rabbitmq:5672"
 
 
 settings = Settings()
@@ -55,7 +54,8 @@ logger = logging.getLogger(__name__)
 
 
 def create_celery_client() -> Celery:
-    return Celery("takss", broker=settings.CELERY_BROKER_URL)
+    logger.critical(f"{settings.CELERY_BROKER_URL}")
+    return Celery("tasks", broker=settings.CELERY_BROKER_URL)
 
 
 def create_s3_client():

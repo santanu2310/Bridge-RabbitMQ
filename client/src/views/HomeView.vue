@@ -13,9 +13,12 @@
 
 	import { useUserStore } from "@/stores/user";
 	import { useFriendStore } from "@/stores/friend";
+	import { useCallStore } from "@/stores/call";
 
 	const friendStore = useFriendStore();
 	const userStore = useUserStore();
+	const callStore = useCallStore();
+
 	const width = ref<number>(window.innerWidth);
 	console.log(width.value);
 
@@ -34,10 +37,10 @@
 		leftContent.value = n;
 	}
 
-	function getFriendProfileUrl(): string | null {
-		return friendStore.friends[userStore.ongoingCall!.participants[0]]
-			.profilePicUrl;
-	}
+	// function getFriendProfileUrl(): string | null {
+	// 	return friendStore.friends[userStore.ongoingCall!.participants[0]]
+	// 		.profilePicUrl;
+	// }
 
 	onMounted(() => {
 		window.addEventListener("resize", onResize);
@@ -81,12 +84,13 @@
 		</div>
 		<div
 			class="lg:w-[40rem] xl:w-[44rem]"
-			v-if="userStore.ongoingCall?.minimised == false"
+			v-if="callStore.currentCallState?.minimised == false"
 		>
-			<AudioCall v-if="userStore.ongoingCall?.minimised == false" />
+			<AudioCall v-if="callStore.currentCallState?.minimised == false" />
 		</div>
-		<div
+		<!-- <div
 			class="w-fit h-12 p-2 flex items-center justify-between absolute top-[4vh] right-[3vw] bg-primary bg-opacity-90 drop-shadow-lg rounded-full"
+			v-if="callStore.currentCallState?.minimised"
 		>
 			<div
 				class="h-full w-auto aspect-square rounded-full overflow-hidden"
@@ -103,7 +107,7 @@
 			>
 				<IconCall :size="50" :rotate="135" />
 			</button>
-		</div>
+		</div> -->
 	</main>
 </template>
 

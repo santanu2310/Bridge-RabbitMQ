@@ -7,6 +7,7 @@ import {
 	SyncMessageType,
 	type MessageEvent,
 	type MessageStatusUpdate,
+	type SyncMessage,
 } from "@/types/SocketEvents";
 import { indexedDbService } from "@/services/indexDbServices";
 import { useUserStore } from "./user";
@@ -27,6 +28,8 @@ export const useSyncStore = defineStore("background_sync", () => {
 	const userStore = useUserStore();
 	const authStore = useAuthStore();
 	const friendStore = useFriendStore();
+
+	// const emit = defineEmits<{ (e: "webRTC", payload: WebRTCMessage): void }>();
 
 	const { isOnline, setOnline, setOffline } =
 		userStore.useOnlineStatusManager();
@@ -90,7 +93,7 @@ export const useSyncStore = defineStore("background_sync", () => {
 		}
 	});
 
-	async function sendMessage(data: MessageStatusUpdate) {
+	async function sendMessage(data: SyncMessage) {
 		socket.send(data);
 	}
 
@@ -301,6 +304,7 @@ export const useSyncStore = defineStore("background_sync", () => {
 	}
 
 	return {
+		socket,
 		syncAndLoadConversationsFromLastDate,
 		sendMessage,
 		syncMessageStatus,

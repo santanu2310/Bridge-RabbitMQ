@@ -98,9 +98,6 @@ def process_media_message(message_id: str):
 def process_profile_media(file_id: str, user_id: str, media_type: str):
     db = dependency.get_dependency(Dependency.db)
 
-    test_db = dependency.get_dependency(Dependency.queue)
-    logger.critical(f"form process media message {test_db=}")
-
     s3_client = dependency.get_dependency(Dependency.s3_client)
 
     try:
@@ -117,7 +114,7 @@ def process_profile_media(file_id: str, user_id: str, media_type: str):
         elif media_type == MediaType.banner_picture.value:
             target_size = [855, 360]
         else:
-            logger.error(f"Invalid media_type : {media_type}")
+            logger.critical(f"Invalid media_type : {media_type}")
             return
 
         output_buffer = process_image_to_aspect(
