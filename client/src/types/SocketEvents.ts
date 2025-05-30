@@ -49,7 +49,13 @@ export interface CallEndPayload {
   type: "user_hangup";
   call_id: string;
   ended_at: string | undefined;
-  reason: "hang_up" | "missed" | "network_error" | "busy" | "timeout";
+  reason:
+    | "hang_up"
+    | "rejected"
+    | "missed"
+    | "network_error"
+    | "busy"
+    | "timeout";
   ended_by: string;
 }
 

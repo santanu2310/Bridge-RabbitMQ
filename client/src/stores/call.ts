@@ -10,7 +10,11 @@ import type {
   CallEndPayload,
   WebRTCMessage,
 } from "@/types/SocketEvents";
-import { type CallRecord, mapResponseToCallRecord } from "@/types/Call";
+import {
+  type CallRecord,
+  CallStatus,
+  mapResponseToCallRecord,
+} from "@/types/Call";
 import type { callState } from "@/types/Commons";
 import { indexedDbService } from "@/services/indexDbServices";
 
@@ -96,6 +100,13 @@ export const useCallStore = defineStore("call", () => {
 
       // Handle user hangup (end call)
     } else if (msg.type == "user_hangup") {
+      let callStatus: CallStatus = CallStatus.ACCEPTED;
+
+      if (msg.reason === "rejected") {
+        callStatus = CallStatus.REJECTED;
+      } else if (msg.reason === "missed") {
+        callStatus = CallStatus.MISSED;
+      }
       const callRecord: CallRecord = {
         callId: currentCallState.value!.callId!,
         callType: currentCallState.value!.isCameraOn ? "video" : "audio",
@@ -103,7 +114,7 @@ export const useCallStore = defineStore("call", () => {
         calleeId: currentCallState.value!.calleeId,
         initiatedAt: currentCallState.value!.initiationTime!,
         startedAt: currentCallState.value?.startTime!,
-        status: currentCallState.value?.callStatus!, //TODO: This can be undefined if user cant connect to the server.
+        status: callStatus, //TODO: This can be undefined if user cant connect to the server.
         endedAt: msg.ended_at!,
       };
       console.log("callRecord", callRecord);
@@ -251,17 +262,26 @@ export const useCallStore = defineStore("call", () => {
 
   // Ends an active WebRTC call by sending a hangup signal to the remote peer
   async function hangup(call_id: string): Promise<void> {
+    let reason: "hang_up" | "rejected" | "missed" = "hang_up";
+
+    if (currentCallState.value?.callStatus === "incoming") {
+      reason = "rejected";
+    }
+    if (
+      currentCallState.value?.callStatus === "calling" ||
+      currentCallState.value?.callStatus === "ringing"
+    ) {
+      reason = "missed";
+    }
     // Construct and send the payload to signal call termination
     const endPayload: CallEndPayload = {
       call_id: call_id,
       type: "user_hangup",
       ended_at: undefined,
       ended_by: userStore.user.id,
-      reason: "hang_up",
+      reason: reason,
     };
     await syncStore.sendMessage(endPayload);
-
-    // clearCallData();
   }
 
   // Toggles the local audio stream (mute/unmute) and returns the new mute state

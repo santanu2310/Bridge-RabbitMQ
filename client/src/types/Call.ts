@@ -1,9 +1,17 @@
+export enum CallStatus {
+  CALLING = "calling",
+  RINGING = "ringing",
+  ACCEPTED = "accepted",
+  REJECTED = "rejected",
+  MISSED = "missed",
+}
+
 export interface CallRecord {
   callId: string;
   callerId: string;
   calleeId: string;
   callType: string;
-  status: string;
+  status: CallStatus;
   initiatedAt: string;
   startedAt: string | null;
   endedAt: string;
