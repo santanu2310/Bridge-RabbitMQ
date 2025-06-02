@@ -4,6 +4,7 @@
 	import IconMessages from "@/components/icons/IconMessages.vue";
 	import IconGroupes from "@/components/icons/IconGroupes.vue";
 	import IconFriends from "@/components/icons/IconFriends.vue";
+	import IconCall from "@/components/icons/IconCall.vue";
 
 	const userStore = useUserStore();
 </script>
@@ -36,6 +37,12 @@
 				@click="$emit('switchContainer', 'friends')"
 			>
 				<IconFriends :size="35" />
+			</div>
+			<div
+				class="w-auto lg:w-full h-full lg:h-auto p-1 aspect-square flex items-center justify-center cursor-pointer"
+				@click="$emit('switchContainer', 'calllogs')"
+			>
+				<IconCall :size="35" />
 			</div>
 		</div>
 		<div

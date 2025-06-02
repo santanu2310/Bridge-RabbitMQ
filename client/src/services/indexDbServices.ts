@@ -22,7 +22,8 @@ const STORES = [
     indexes: [{ name: "participant", unique: true }],
   },
   {
-    name: "collLog",
+    name: "callLog",
+    indexes: [{ name: "endedAt", unique: false }],
   },
   {
     name: "tempFile",
@@ -179,9 +180,13 @@ class IndexedDbService {
     });
   }
 
+  // Retrieves records from the specified object store, optionally using an index and cursor.
   async getAllRecords(
     storeName: string,
-    index?: { [key: string]: string },
+    indexName?: string,
+    range?: IDBKeyRange,
+    direction: IDBCursorDirection = "next",
+    count: number | undefined = undefined,
   ): Promise<{ newlyCreated: boolean; objects: object[] }> {
     if (!this.db) {
       await this.openDb();
@@ -199,36 +204,40 @@ class IndexedDbService {
       //open a transaction in indesedDb
       const transaction = this.db.transaction(storeName, "readonly");
       const store = transaction.objectStore(storeName);
+      const results: object[] = [];
 
-      if (index) {
+      let retrived = 0;
+
+      if (indexName) {
         //retrive an index object and search for the given value
-        const storeIndexes = store.index(Object.keys(index)[0]);
-        const request = storeIndexes.openCursor(
-          IDBKeyRange.only(index[Object.keys(index)[0]]),
-        );
-
-        const results: object[] = [];
+        const index = store.index(indexName);
+        const request = index.openCursor(range || null, direction);
 
         request.onsuccess = (event) => {
           // store the result of current cursor, store in relusts and push the cursor forwored
           const cursor = (event.target as IDBRequest).result;
 
-          if (cursor) {
+          if (cursor && (count === undefined || retrived < count)) {
+            // Push the current record's value into the results array.
             results.push(cursor.value);
+            retrived++;
+            // Advance the cursor to the next record.
             cursor.continue();
           } else {
+            // No more records (or we've hit the count limit), so resolve with results.
             resolve({
               newlyCreated: this.newlyCreated,
               objects: results,
             });
           }
         };
+        // If the cursor request fails, reject the promise with the error.
         request.onerror = () => {
           rejects(request.error);
         };
       } else {
         // get all the objects and return the value
-        const request = store.getAll();
+        const request = store.getAll(null, count);
 
         request.onsuccess = () => {
           resolve({

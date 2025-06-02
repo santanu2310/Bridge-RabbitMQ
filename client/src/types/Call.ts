@@ -7,7 +7,7 @@ export enum CallStatus {
 }
 
 export interface CallRecord {
-  callId: string;
+  id: string;
   callerId: string;
   calleeId: string;
   callType: string;
@@ -19,7 +19,7 @@ export interface CallRecord {
 
 export function mapResponseToCallRecord(record: any): CallRecord {
   return {
-    callId: record.call_id,
+    id: record.call_id,
     callerId: record.caller_id,
     calleeId: record.callee_id,
     callType: record.call_type,

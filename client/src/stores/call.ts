@@ -24,8 +24,10 @@ export const useCallStore = defineStore("call", () => {
   const authStore = useAuthStore();
 
   const socket = syncStore.socket;
+  const lastCall = localStorage.getItem("lastCall");
 
   const currentCallState = ref<callState | null>(null);
+  const callRecords = ref<CallRecord[]>([]);
   const pc = ref<RTCPeerConnection | undefined>(undefined);
   const remoteStream = ref<MediaStream | null>(null);
   const localStream = ref<MediaStream | null>(null);
@@ -108,7 +110,7 @@ export const useCallStore = defineStore("call", () => {
         callStatus = CallStatus.MISSED;
       }
       const callRecord: CallRecord = {
-        callId: currentCallState.value!.callId!,
+        id: currentCallState.value!.callId!,
         callType: currentCallState.value!.isCameraOn ? "video" : "audio",
         callerId: currentCallState.value!.callerId,
         calleeId: currentCallState.value!.calleeId,
@@ -117,9 +119,12 @@ export const useCallStore = defineStore("call", () => {
         status: callStatus, //TODO: This can be undefined if user cant connect to the server.
         endedAt: msg.ended_at!,
       };
-      console.log("callRecord", callRecord);
 
+      localStorage.setItem("lastCall", msg.ended_at!);
       clearCallData();
+      callRecords.value.unshift(callRecord);
+
+      await indexedDbService.addRecord("callLog", callRecord);
     }
   });
 
@@ -320,12 +325,72 @@ export const useCallStore = defineStore("call", () => {
   //     );
   //   }
   // }
+  async function loadOldRecords() {
+    // Retrieve all records from the “callLog” object store, ordered by “endedAt” descending.
+    // TODO: The function should accept two parameter (dateBefore and noOfRecord).
+    const oldReocrds: CallRecord[] = (
+      await indexedDbService.getAllRecords(
+        "callLog",
+        "endedAt",
+        undefined,
+        "prev",
+      )
+    ).objects as CallRecord[];
+
+    // Push all retrieved records into the reactive callRecords array.
+    callRecords.value.push(...oldReocrds);
+  }
+  async function syncCallLogs() {
+    try {
+      // load old call records form indexedDB into memrory
+      await loadOldRecords();
+
+      // Build the API endpoint, optionally including the last sync date
+      let url = "/sync/call-log";
+      if (lastCall) url += `?date_after=${lastCall}`;
+
+      // Send an authenticated GET request
+      const response = await authStore.authAxios({
+        method: "get",
+        url: url,
+      });
+
+      // Check for a successful response
+      if (response.status !== 200)
+        throw new Error(
+          `Failed to fetch call record. Status: ${response.status}`,
+        );
+
+      // Transform the response data into CallRecord objects array
+      let newLogs: CallRecord[] = [];
+      for (let log of response.data) {
+        newLogs.push(mapResponseToCallRecord(log));
+      }
+
+      // Prepend the new logs to the in-memory call records array
+      callRecords.value.unshift(...newLogs);
+      // Update the last call timestamp in local storage for the next sync
+      await indexedDbService.batchUpsert("callLog", newLogs);
+
+      if (newLogs.length > 0) {
+        localStorage.setItem("lastCall", newLogs[0].endedAt);
+      }
+    } catch (error) {
+      console.error("Error in getCallRecord:", error);
+      throw new Error(
+        "Unable to retrieve call record. Please try again later.",
+      );
+    }
+  }
+
   return {
+    callRecords,
     makeCall,
     currentCallState,
     acceptCall,
     hangup,
     remoteStream,
     alterAudioStream,
+    syncCallLogs,
   };
 });

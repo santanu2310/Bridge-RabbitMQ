@@ -1,7 +1,6 @@
 <script setup lang="ts">
 	import { ref, onMounted, onUnmounted } from "vue";
 
-	import IconCall from "@/components/icons/IconCall.vue";
 	import Chats from "@/containers/Chats.vue";
 	import Friends from "@/containers/Friends.vue";
 	import Profile from "@/containers/Profile.vue";
@@ -10,6 +9,7 @@
 	import Conversation from "@/containers/Conversation.vue";
 	import Navigation from "@/containers/Navigation.vue";
 	import AudioCall from "@/containers/AudioCall.vue";
+	import CallLogs from "@/containers/CallLogs.vue";
 
 	import { useUserStore } from "@/stores/user";
 	import { useFriendStore } from "@/stores/friend";
@@ -74,6 +74,7 @@
 					@friends="leftContent = 'friends'"
 				/>
 				<Settings v-if="leftContent == 'settings'" />
+				<CallLogs v-if="leftContent == 'calllogs'" />
 			</div>
 		</div>
 		<div
