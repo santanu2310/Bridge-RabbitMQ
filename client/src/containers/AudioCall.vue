@@ -19,6 +19,7 @@ const userStore = useUserStore();
 const userData = ref<User | null>(null);
 
 const audioElement = ref<HTMLAudioElement>();
+const unMute = ref<boolean>(true);
 let cleanupWatcher: (() => void) | null = null;
 let timer: number | null = null;
 const elapsedSeconds = ref<number>(0);
@@ -49,14 +50,17 @@ onMounted(() => {
 
   watch(callStore.currentCallState, () => {
     if (
-      callStore.currentCallState?.callStatus != "in_call" ||
+      callStore.currentCallState?.callStatus != "accepted" ||
       !callStore.currentCallState.startTime
     )
       return;
 
     timer = setInterval(() => {
+      if (!callStore.currentCallState?.startTime) return;
       elapsedSeconds.value = Math.floor(
-        (Date.now() - callStore.currentCallState!.startTime!) / 1000,
+        (Date.now() -
+          new Date(callStore.currentCallState.startTime).getTime()) /
+          1000,
       );
     }, 1000);
   });
@@ -153,8 +157,10 @@ onBeforeUnmount(() => {
       </button>
       <button
         class="h-3/4 w-auto aspect-square rounded-full flex items-center justify-center cursor-pointer duration-200 hover:bg-color-background-mute"
+        @click="unMute = callStore.alterAudioStream()"
       >
-        <IconMic :size="40" />
+        <IconMic v-if="unMute" :size="40" />
+        <IconMicOff v-else :size="40" />
       </button>
       <button
         class="h-3/4 w-auto aspect-square rounded-full flex items-center justify-center cursor-pointer duration-200 bg-red-500 text-color-white"
