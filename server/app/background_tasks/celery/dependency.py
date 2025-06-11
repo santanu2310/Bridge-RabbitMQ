@@ -1,4 +1,5 @@
 import logging
+import threading
 from enum import Enum
 from typing import Dict, Any
 from celery import Task  # type: ignore
@@ -16,70 +17,64 @@ class Dependency(str, Enum):
 
 
 class DependencyManager(Task):
-    _instance = None
     _connections: Dict[str, Any] = {}
+    _initialized = False
+    _lock = threading.Lock()
 
     def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            # cls._instance._initialize_connections()
+        if not hasattr(cls, "_instance"):
+            with cls._lock:
+                if not hasattr(cls, "_instance"):
+                    cls._instance = super().__new__(cls)
         return cls._instance
 
-    def _initialize_connections(self):
+    def initialize(self):
+        if self._initialized:
+            return
         try:
-            self._initialize_mongodb()
-            self._initialize_s3()
-            self._initialize_rabbitmq()
+            # MongoDB connection
+            client = create_sync_client()
+            self._connections[Dependency.db] = SyncDatabase(
+                client, settings.DATABASE_NAME
+            )
+
+            # S3 client
+            self._connections[Dependency.s3_client] = create_s3_client()
+
+            # RabbitMq
+            self._connections[Dependency.queue] = create_bloking_rabbit_connection()
+
+            self._initialized = True
+
         except Exception as e:
             logging.error(f"Connection initialization failed: {e}")
             raise
 
-    def _initialize_mongodb(self):
-        client = create_sync_client()
-        db = SyncDatabase(client, settings.DATABASE_NAME)
-        self._connections[Dependency.db.value] = {"client": client, "db": db}
-
-    def _initialize_s3(self):
-        self._connections[Dependency.s3_client.value] = create_s3_client()
-
-    def _initialize_rabbitmq(self):
-        self._connections[Dependency.queue.value] = create_bloking_rabbit_connection()
-
     def get_dependency(self, name: Dependency):
-        """
-        Retrieve a specific dependency connection
+        """Retrieve a dependency with lazy initialization"""
+        if not self._initialized:
+            self.initialize()
 
-        :param name: Name of the dependency (mongodb, s3, rabbitmq)
-        :return: Dependency connection details
-        """
-        if name.value not in self._connections:
-            try:
-                self._initialize_mongodb()
-                self._initialize_s3()
-            except Exception as e:
-                logging.error(f"Connection initialization failed: {e}")
-                raise
+        if name not in self._connections:
+            raise ValueError(f"Unknown dependency: {name}")
 
-        if name.value == Dependency.db.value:
-            return self._connections[Dependency.db.value]["db"]
-        return self._connections[name.value]
+        return self._connections[name]
 
     def close_connections(self):
-        """
-        Safely close all connections
-        """
-        connection_closers = {
-            "mongodb": lambda: self._connections[Dependency.db.value]["client"].close(),
-            "rabbitmq": lambda: self._connections[Dependency.queue.value].close(),
-        }
+        """Safely close all connections"""
+        try:
+            if db := self._connections.get(Dependency.db):
+                db.client.close()
+                logger.info("MongoDB connection closed")
+        except Exception as e:
+            logger.error(f"Error closing MongoDB: {e}")
 
-        for name, closer in connection_closers.items():
-            try:
-                if name in self._connections:
-                    closer()
-                    logger.info(f"{name.capitalize()} connection closed")
-            except Exception as e:
-                logger.error(f"Error closing {name} connection: {e}")
+        try:
+            if queue := self._connections.get(Dependency.queue):
+                queue.close()
+                logger.info("RabbitMQ connection closed")
+        except Exception as e:
+            logger.error(f"Error closing RabbitMQ: {e}")
 
-    def __del__(self):
-        self.close_connections()
+        self._connections.clear()
+        self._initialized = False

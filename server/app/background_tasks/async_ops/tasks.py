@@ -31,15 +31,17 @@ async def watch_user_updates():
     db = AsyncDatabase(client, settings.DATABASE_NAME)
 
     async with db.user_profile.watch(
-        pipeline=[{"$match": {"operationType": "update"}}]
+        pipeline=[{"$match": {"operationType": "update"}}], full_document="updateLookup"
     ) as stream:
         async for change in stream:
             try:
-                cursor = db.friends.find({"_id": change["documentKey"]["_id"]})
+                # user_id = await db.user_profile.find_one({"_id": change['documentKey']['auth_id']})
+                cursor = db.friends.find({"user_id": change["fullDocument"]["auth_id"]})
 
                 # Extracting the `friends_id` values from each result document
-                friends_ids = [doc["friends_id"] async for doc in cursor]
+                friends_ids = [doc["friend_id"] async for doc in cursor]
 
+                logger.critical(f"{friends_ids=}")
                 # Sending the data to the online frinds
                 await send_sync_message(
                     friends_ids, change["updateDescription"]["updatedFields"]
@@ -52,7 +54,7 @@ async def watch_user_updates():
                 )
 
             except Exception as e:
-                print(f"Error processing user update : {e}")
+                logger.error(f"Error processing user update : {e}")
 
 
 @rabbit_consumer(
@@ -176,4 +178,5 @@ async def watch_friend_requests():
 async def profile_media_update_confirmation(
     message: AbstractIncomingMessage,
 ):
+    logger.error(f"{message=}")
     await send_profilemedia_update_confirmation(data=message)

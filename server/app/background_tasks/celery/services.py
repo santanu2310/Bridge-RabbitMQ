@@ -30,7 +30,7 @@ def process_image_to_aspect(
         img = img.crop((0, top, src_w, top + new_h))
 
     # Convert to RGB and resize to the exact target size
-    img = img.convert("RGB").resize((tgt_w, tgt_h), Image.LANCZOS)
+    img = img.convert("RGB").resize((tgt_w, tgt_h))
 
     # Save the image to ByteIO object as WebP and return it.
     out = io.BytesIO()
