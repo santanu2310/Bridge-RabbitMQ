@@ -53,7 +53,7 @@ export const useCallStore = defineStore("call", () => {
           callerId: msg.sender_id,
           calleeId: msg.receiver_id,
           isMuted: false,
-          isCameraOn: false,
+          isCameraOn: msg.video,
           callStatus: "incoming",
           minimised: false,
           startTime: undefined,
@@ -131,15 +131,24 @@ export const useCallStore = defineStore("call", () => {
   async function createRTCPeerConnection(
     configuration: object,
     receiverId: string,
+    video: boolean = false,
   ): Promise<RTCPeerConnection> {
     // Create a new RTCPeerConnection with the provided configuration
     const peerConnection = new RTCPeerConnection(configuration);
 
     // Get local audio stream
-    localStream.value = await navigator.mediaDevices.getUserMedia({
-      video: false,
-      audio: true,
-    });
+    try {
+      localStream.value = await navigator.mediaDevices.getUserMedia({
+        video: video,
+        audio: true,
+      });
+    } catch (error) {
+      console.error("Failed to access media devices" + error);
+      peerConnection.close();
+      throw error;
+    }
+
+    console.log(localStream.value);
 
     // Add local tracks to the peer connection
     localStream.value.getTracks().forEach((track) => {
@@ -151,11 +160,17 @@ export const useCallStore = defineStore("call", () => {
 
     // When remote tracks are received, add them to the remote MediaStream
     peerConnection.addEventListener("track", (e) => {
+      console.log("remoteStream : ", e.track);
+      console.log(remoteStream.value);
+
       remote.addTrack(e.track);
+
+      remoteStream.value = remote;
+      console.log("remote : ", remote);
     });
 
     // Save the remote stream for rendering in UI
-    remoteStream.value = remote;
+    // remoteStream.value = remote;
 
     // Listen for ICE candidates and send them to the remote peer
     peerConnection.addEventListener("icecandidate", (event) => {
@@ -180,14 +195,14 @@ export const useCallStore = defineStore("call", () => {
   }
 
   // Initiates a WebRTC call by creating an offer and sending it to the receiver
-  async function makeCall(receiverId: string) {
+  async function makeCall(receiverId: string, video: boolean = false) {
     // Initialize the current call state with relevant info
     currentCallState.value = {
       callId: null,
       callerId: userStore.user.id,
       calleeId: receiverId,
       isMuted: false,
-      isCameraOn: false,
+      isCameraOn: video,
       callStatus: "calling",
       minimised: false,
       description: null,
@@ -196,7 +211,7 @@ export const useCallStore = defineStore("call", () => {
     };
 
     // Create a new RTCPeerConnection and get local media stream
-    pc.value = await createRTCPeerConnection(configuration, receiverId);
+    pc.value = await createRTCPeerConnection(configuration, receiverId, video);
 
     // Create an SDP offer describing the local end of the connection
     const offer = await pc.value.createOffer();
@@ -211,7 +226,7 @@ export const useCallStore = defineStore("call", () => {
       call_id: null,
       description: offer,
       audio: true,
-      video: false,
+      video: video,
       timestamp: new Date().toISOString(),
     };
 
@@ -226,14 +241,15 @@ export const useCallStore = defineStore("call", () => {
       return;
 
     currentCallState.value.callStatus = "accepted";
-
+    console.log(currentCallState.value.isCameraOn);
     // Create a new RTCPeerConnection and prepare local media
     pc.value = await createRTCPeerConnection(
       configuration,
       currentCallState.value.callerId,
+      currentCallState.value.isCameraOn,
     );
     // Set the received offer as the remote description
-    pc.value.setRemoteDescription(
+    await pc.value.setRemoteDescription(
       new RTCSessionDescription(currentCallState.value.description),
     );
 
@@ -250,7 +266,7 @@ export const useCallStore = defineStore("call", () => {
       description: answer,
       call_id: currentCallState.value.callId,
       audio: true,
-      video: false,
+      video: currentCallState.value.isCameraOn,
       timestamp: new Date().toISOString(),
     };
     syncStore.sendMessage(callAnswer);
@@ -390,6 +406,7 @@ export const useCallStore = defineStore("call", () => {
     acceptCall,
     hangup,
     remoteStream,
+    localStream,
     alterAudioStream,
     syncCallLogs,
   };

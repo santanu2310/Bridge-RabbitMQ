@@ -5,22 +5,27 @@ import { useSyncStore } from "@/stores/background_sync";
 import { useFriendStore } from "@/stores/friend";
 import { useAuthStore } from "@/stores/auth";
 import { useCallStore } from "@/stores/call";
+import { useMessageStore } from "@/stores/message";
 
+const authStore = useAuthStore();
 const userStore = useUserStore();
 const friendStore = useFriendStore();
-const syncStore = useSyncStore();
-const authStore = useAuthStore();
 const callStore = useCallStore();
 
 onMounted(async () => {
   await userStore.getUser();
   authStore.isAuthenticated = false;
-  await syncStore.syncAndLoadConversationsFromLastDate();
-  await syncStore.syncMessageStatus();
+
   await friendStore.listFriend();
   await friendStore.getInitialOnlineStatus();
   await friendStore.getPendingFriendRequests();
   await callStore.syncCallLogs();
+
+  const syncStore = useSyncStore();
+  useMessageStore();
+
+  await syncStore.syncAndLoadConversationsFromLastDate();
+  await syncStore.syncMessageStatus();
 
   authStore.isLoading = false;
 });

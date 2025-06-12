@@ -1,8 +1,8 @@
 from datetime import datetime
 from bson import ObjectId
 import logging
-from typing import Literal, List, Dict, Annotated
-from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, Path
+from typing import Literal, List, Dict, Annotated, Optional
+from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect, Path
 from pymongo import UpdateOne
 from app.core.schemas import (
     SyncSocketMessage,
@@ -246,9 +246,11 @@ async def getCallLog(
     return call_record
 
 
-@router.get("call-log/{date_after}")
+@router.get("/call-log")
 async def getCallLogs(
-    date_after: Annotated[datetime, Path(title="Call ID")],
+    date_after: Optional[datetime] = Query(
+        None, description="Fetch call logs after this date"
+    ),
     user: UserAuthOut = Depends(get_user_from_access_token_http),
     db: AsyncDatabase = Depends(get_async_database),
 ):

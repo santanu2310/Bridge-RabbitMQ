@@ -210,7 +210,7 @@
 				</button>
 				<button
 					class="h-8 mx-2 aspect-square bg-transparent border-none flex items-center justify-center opacity-50"
-					disabled
+					@click="callStore.makeCall(friend!.id, true)"
 				>
 					<IconVideoCall />
 				</button>
