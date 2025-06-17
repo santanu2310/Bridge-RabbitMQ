@@ -1,6 +1,8 @@
+import jwt
+import logging
 from typing import Annotated
 from datetime import timedelta, datetime, timezone
-from fastapi import APIRouter, Body, HTTPException, status, Depends, Query
+from fastapi import APIRouter, Body, HTTPException, status, Depends, Query, Cookie
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 
@@ -32,6 +34,8 @@ from .services import (
 )
 
 router = APIRouter()
+
+logger = logging.getLogger(__name__)
 
 
 @router.post("/register")
@@ -136,6 +140,34 @@ async def get_refresh_token(user: UserAuthOut = Depends(get_user_from_refresh_to
         value=refresh_token,
         httponly=True,
         expires=r_expires,
+        samesite="lax",
+    )
+
+    return response
+
+
+@router.post("/clear-token")
+async def clear_tokens(
+    refresh_token: Annotated[str, Cookie(alias="refresh_t")],
+):
+    payload = jwt.decode(
+        refresh_token,
+        settings.JWT_REFRESH_SECRET_KEY,
+        algorithms=[settings.ALGORITHM],
+    )
+
+    logger.info(f"{payload=}")
+
+    response = JSONResponse(content=None)
+    response.delete_cookie(
+        key="access_t",
+        httponly=False,
+        samesite="lax",
+    )
+
+    response.delete_cookie(
+        key="refresh_t",
+        httponly=True,
         samesite="lax",
     )
 

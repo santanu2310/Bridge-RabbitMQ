@@ -1,4 +1,4 @@
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import { defineStore } from "pinia";
 import { useSyncStore } from "./background_sync";
 import { useUserStore } from "./user";
@@ -32,6 +32,9 @@ export const useCallStore = defineStore("call", () => {
   const remoteStream = ref<MediaStream | null>(null);
   const localStream = ref<MediaStream | null>(null);
 
+  watch(currentCallState, () => {
+    userStore.currentCallState = currentCallState.value;
+  });
   const configuration = {
     iceServers: [
       { urls: "stun:stun.l.google.com:19302" },
@@ -393,9 +396,6 @@ export const useCallStore = defineStore("call", () => {
       }
     } catch (error) {
       console.error("Error in getCallRecord:", error);
-      throw new Error(
-        "Unable to retrieve call record. Please try again later.",
-      );
     }
   }
 
