@@ -35,21 +35,42 @@ export const useFriendStore = defineStore("friend", () => {
 
       let friends_list: User[] = result.objects;
 
+      // Create blob urls for user profile and banner
+      if (friends_list) {
+        await Promise.all(
+          friends_list.map(async (user: User) => {
+            // Retrive blob object from indesedDB and create there urls
+            const profileMeida = (await indexedDbService.getRecord(
+              "profileMedia",
+              user.id,
+            )) as profileMedia;
+
+            // TODO: errors needed to bo addressed
+            user.profilePicUrl = profileMeida.avatar
+              ? URL.createObjectURL(profileMeida.avatar)
+              : null;
+            user.banner = profileMeida.banner
+              ? URL.createObjectURL(profileMeida.banner)
+              : null;
+          }),
+        );
+      }
+
       let url = "friends/get-friends";
 
       // Add the lastupdated date
       if (lastFriendsUpdate) {
         url += `?updateAfter=${lastFriendsUpdate}`;
       }
-      // if (!result.newlyCreated || !lastFriendsUpdate) {
-      //         url += `?updateAfter=${lastFriendsUpdate}`;
-      //       }
+
+      // Retrive new data from server
       const response = await authStore.authAxios({
         method: "get",
         url: url,
       });
 
       if (response.status === 200) {
+        // Create and store blob images in IndexedDB
         const updatedFriend: User[] = await Promise.all(
           response.data.map(async (data: object) => {
             // Convert raw response data to a User object.
@@ -68,42 +89,14 @@ export const useFriendStore = defineStore("friend", () => {
           }),
         );
 
-        //update the original fiends
-        if (friends_list) {
-          const updatedFriendMap = new Map(
-            updatedFriend.map((user) => [user.id, user]),
-          );
-
-          await Promise.all(
-            friends_list.map(async (user: User) => {
-              // Retrive blob object from indesedDB and create there urls
-              const profileMeida = (await indexedDbService.getRecord(
-                "profileMedia",
-                user.id,
-              )) as profileMedia;
-
-              user.profilePicUrl = profileMeida.avatar
-                ? URL.createObjectURL(profileMeida.avatar)
-                : null;
-              user.banner = profileMeida.banner
-                ? URL.createObjectURL(profileMeida.banner)
-                : null;
-
-              // Over write the friends data if there any changes
-              if (updatedFriendMap.has(user.id)) {
-                Object.assign(user, updatedFriendMap.get(user.id)!);
-              }
-            }),
-          );
-        }
-
-        // If at least one friend was updated, update the last updated timestamp.
+        // Update the last updated timestamp.
         if (updatedFriend.length > 0) {
+          friends_list.push(...updatedFriend);
           localStorage.setItem("lastUpdated", new Date().toISOString());
         }
       }
 
-      // Stor the friends list in fiends Record
+      // Store the friends list in fiends Record
       friends.value = friends_list.reduce(
         (acc, user) => {
           acc[user.id] = user;
@@ -242,7 +235,7 @@ export const useFriendStore = defineStore("friend", () => {
         profileMediaData.banner = bannerBlob;
       }
 
-      await indexedDbService.addRecord("profileMedia", profileMediaData);
+      await indexedDbService.updateRecord("profileMedia", profileMediaData);
 
       return mediaUrls;
     } catch (error) {
