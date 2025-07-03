@@ -378,6 +378,14 @@
 						></span>
 					</div>
 				</div>
+				<div class="w-full h-14 mb-5 flex items-center justify-center">
+					<button
+						class="w-1/3 h-auot aspect-[3/1] text-red-500 rounded-lg border border-color-background-soft text-sm font-medium"
+						@click="authStore.logOut()"
+					>
+						LogOut
+					</button>
+				</div>
 			</div>
 		</div>
 	</div>
