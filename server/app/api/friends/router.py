@@ -98,7 +98,7 @@ async def make_friend_request(
     )
 
     # Inserting the request into the collection
-    result = db.friend_request.insert_one(
+    await db.friend_request.insert_one(
         request.model_dump(by_alias=True, exclude={"id"})
     )
 

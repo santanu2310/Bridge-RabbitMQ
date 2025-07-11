@@ -3,12 +3,13 @@ from bson import ObjectId
 from datetime import datetime
 from typing import Optional, List, Dict, Any, Tuple
 from fastapi import HTTPException, status
-from app.core.schemas import Friends, Friends_Status, UserOut, UserBrief, Friends_Status
+from app.core.schemas import Friends, Friends_Status, UserOut
 from app.core.db import AsyncDatabase
 from app.api.user.services import get_full_user
 from app.utils import create_presigned_download_url
 
 from .pipelines import search_user_by_full_name
+from .schemas import UserBrief
 
 logger = logging.getLogger(__name__)
 
