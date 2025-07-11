@@ -3,10 +3,12 @@ from bson import ObjectId
 from datetime import datetime
 from typing import Optional, List, Dict, Any, Tuple
 from fastapi import HTTPException, status
-from app.core.schemas import Friends, Friends_Status, UserOut
+from app.core.schemas import Friends, Friends_Status, UserOut, UserBrief, Friends_Status
 from app.core.db import AsyncDatabase
 from app.api.user.services import get_full_user
 from app.utils import create_presigned_download_url
+
+from .pipelines import search_user_by_full_name
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +20,28 @@ async def are_friends(
     if not friend:
         return False
     return True
+
+
+async def search_user(
+    db: AsyncDatabase, query: str, current_user_id: ObjectId
+) -> list[UserBrief]:
+    try:
+        cursor = db.user_profile.aggregate(
+            search_user_by_full_name(name=query, user_id=current_user_id)
+        )
+        users = await cursor.to_list(length=None)
+
+        return [
+            UserBrief(**user)
+            for user in users
+            if user["friend_status"] != Friends_Status.accepted
+        ]
+    except Exception as e:
+        logger.critical(f"Internal Error : {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="error fetching users list",
+        )
 
 
 async def create_friends(

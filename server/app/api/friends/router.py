@@ -1,4 +1,5 @@
 from bson import ObjectId
+import logging
 from typing import Annotated, Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, status, Path, HTTPException, Body, Query
@@ -21,6 +22,7 @@ from app.api.sync_socket.router import send_message
 
 from .services import (
     create_friends,
+    search_user,
     get_friends_list,
     are_friends,
     reject_friend_request,
@@ -28,6 +30,25 @@ from .services import (
 )
 
 router = APIRouter()
+
+logger = logging.getLogger(__name__)
+
+
+@router.get("/search")
+async def search_potential_friend(
+    q: Optional[str] = Query(
+        None, description="Search user by username or display name"
+    ),
+    user: UserAuthOut = Depends(get_user_from_access_token_http),
+    db: AsyncDatabase = Depends(get_async_database),
+):
+    if not q:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="query parameter 'q' can't be empty.",
+        )
+    users = await search_user(db=db, query=q, current_user_id=user.id)
+    return users
 
 
 @router.post("/make-request", status_code=201)
