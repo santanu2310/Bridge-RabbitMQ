@@ -161,7 +161,9 @@ export const useSyncStore = defineStore("background_sync", () => {
 					//retriving the messages for each conversation from IndesedDB and adding to glaobal varaible
 					const messageRequest = await indexedDbService.getAllRecords(
 						"message",
-						{ conversationId: conv.id as string }
+						"conversationId",
+						IDBKeyRange.only(conv.id as string)
+
 					);
 
 					userStore.conversations[conv.id as string].messages = (

@@ -42,9 +42,10 @@ export const useFriendStore = defineStore("friend", () => {
             // Retrive blob object from indesedDB and create there urls
             const profileMeida = (await indexedDbService.getRecord(
               "profileMedia",
-              user.id,
+              user.id
             )) as profileMedia;
 
+            if (!profileMeida) return;
             // TODO: errors needed to bo addressed
             user.profilePicUrl = profileMeida.avatar
               ? URL.createObjectURL(profileMeida.avatar)
@@ -52,7 +53,7 @@ export const useFriendStore = defineStore("friend", () => {
             user.banner = profileMeida.banner
               ? URL.createObjectURL(profileMeida.banner)
               : null;
-          }),
+          })
         );
       }
 
@@ -82,11 +83,12 @@ export const useFriendStore = defineStore("friend", () => {
               avatar: user.profilePicUrl,
               banner: user.banner,
             });
-            user.profilePicUrl = mediaUrls!.avatar;
-            user.banner = mediaUrls!.banner;
-
+            if (mediaUrls) {
+              user.profilePicUrl = mediaUrls!.avatar;
+              user.banner = mediaUrls!.banner;
+            }
             return user;
-          }),
+          })
         );
 
         // Update the last updated timestamp.
@@ -97,13 +99,10 @@ export const useFriendStore = defineStore("friend", () => {
       }
 
       // Store the friends list in fiends Record
-      friends.value = friends_list.reduce(
-        (acc, user) => {
-          acc[user.id] = user;
-          return acc;
-        },
-        {} as Record<string, User>,
-      );
+      friends.value = friends_list.reduce((acc, user) => {
+        acc[user.id] = user;
+        return acc;
+      }, {} as Record<string, User>);
     } catch (error) {
       console.error(error);
     }
@@ -114,7 +113,7 @@ export const useFriendStore = defineStore("friend", () => {
     const conversation: Conversation = (await indexedDbService.getRecord(
       "conversation",
       null,
-      { participant: userId },
+      { participant: userId }
     )) as Conversation;
 
     // If conversation in local database
@@ -128,7 +127,7 @@ export const useFriendStore = defineStore("friend", () => {
       const request = indexedDbService.getAllRecords(
         "message",
         "conversationId",
-        IDBKeyRange.only(conversation.id as string),
+        IDBKeyRange.only(conversation.id as string)
       );
       const oldMessages = (await request).objects as Message[];
       return oldMessages;
@@ -144,7 +143,7 @@ export const useFriendStore = defineStore("friend", () => {
         const convResponse: Conversation = {
           id: response.data.id,
           participant: response.data.participants.find(
-            (id: string) => id != userStore.user.id,
+            (id: string) => id != userStore.user.id
           ) as string, //It shoud be participants
           startDate: response.data.start_date,
           lastMessageDate: response.data.last_message_date,
@@ -160,7 +159,7 @@ export const useFriendStore = defineStore("friend", () => {
 
         //add the messages to the indesedDb
         const oldMessages = response.data.messages.map((msg: object) =>
-          mapResponseToMessage(msg),
+          mapResponseToMessage(msg)
         );
 
         indexedDbService.batchUpsert("message", oldMessages);
@@ -204,7 +203,7 @@ export const useFriendStore = defineStore("friend", () => {
    */
   async function storeProfileMediaBlob(
     id: string,
-    data: profileMediaUrls,
+    data: profileMediaUrls
   ): Promise<profileMediaUrls | null> {
     try {
       let profileMediaData: profileMedia = {
