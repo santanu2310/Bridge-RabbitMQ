@@ -34,10 +34,10 @@ export const useUserStore = defineStore("user", () => {
     userName: "",
     fullName: "",
     email: "",
-    bio: "",
-    location: "",
-    profilePicUrl: "",
-    banner: "",
+    bio: null,
+    location: null,
+    profilePicUrl: null,
+    banner: null,
     joinedDate: "",
   });
 
@@ -55,13 +55,15 @@ export const useUserStore = defineStore("user", () => {
         user.email = response.data.email;
         user.bio = response.data.bio;
         user.location = response.data.location;
-        user.profilePicUrl = (await getProfileUrl(
+        user.profilePicUrl = await getProfileUrl(
           response.data.profile_picture,
-        )) as string;
-        user.banner = (await getProfileUrl(
+        );
+        user.banner = await getProfileUrl(
           response.data.banner_picture,
-        )) as string;
+        )
         user.joinedDate = response.data.created_at;
+
+        console.log(user)
       }
     } catch (error) {
       authStore.isAuthenticated = false;
@@ -89,7 +91,8 @@ export const useUserStore = defineStore("user", () => {
     };
   }
 
-  async function getProfileUrl(key: string) {
+  async function getProfileUrl(key: string | null): Promise<string | null> {
+    if (key == null) return null;
     const response = await authStore.authAxios({
       method: "get",
       url: `users/download-url?key=${key}`,
@@ -100,6 +103,8 @@ export const useUserStore = defineStore("user", () => {
       const blob = await imageResponse.blob();
       return URL.createObjectURL(blob);
     }
+
+    return null;
   }
 
   return {

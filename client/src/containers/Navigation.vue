@@ -44,7 +44,7 @@ const userStore = useUserStore();
     <NavButton :text="'Profile'" @click="$emit('switchContainer', 'profile')">
       <div class="w-auto lg:w-3/5 h-3/5 lg:h-auto aspect-square overflow-hidden rounded-full cursor-pointer">
         <img
-          :src="userStore.user.profilePicUrl as string"
+          :src="userStore.user.profilePicUrl ?? undefined"
           alt=""
           class="w-full h-full object-cover"
         />

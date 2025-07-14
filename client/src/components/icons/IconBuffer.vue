@@ -25,7 +25,8 @@
 		position: absolute;
 		width: 70%;
 		height: 70%;
-		border: 4.4px solid #1382c2;
+		/* border: 4.4px solid #1382c2; */
+		border: 4.4px solid #e4e8ea;
 		border-top-color: transparent;
 		border-radius: 50%;
 	}

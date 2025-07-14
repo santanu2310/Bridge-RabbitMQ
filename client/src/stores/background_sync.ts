@@ -124,7 +124,8 @@ export const useSyncStore = defineStore("background_sync", () => {
 			message.status = MessageStatus.seen;
 			message.seenTime = seenDateTime;
 			// Update indesedDB record
-			await indexedDbService.updateRecord("message", message);
+			const cleanedMessage = JSON.parse(JSON.stringify(message));
+			await indexedDbService.updateRecord("message", cleanedMessage);
 
 			// Update UI state
 			updateMessageInState(message);
