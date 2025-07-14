@@ -157,15 +157,12 @@ def process_profile_media(file_id: str, user_id: str, media_type: str):
 
         data = message.model_dump_json(by_alias=True)
 
-        pika_conn = create_bloking_rabbit_connection()
         publish_bloking_message(
             connection=queue,
             exchange_name=settings.EXCHANGES.task_updates.value,
             topic=settings.TOPICS.media_update,
             data=data,
         )
-
-        pika_conn.close()
 
         s3.delete_object(Bucket=settings.BUCKET_NAME, Key=user_profile.profile_picture)
 
@@ -174,4 +171,3 @@ def process_profile_media(file_id: str, user_id: str, media_type: str):
 
     # Delete the old image from S3.
     s3.delete_object(Bucket=settings.BUCKET_NAME, Key=file_id)
-    # producer.close()

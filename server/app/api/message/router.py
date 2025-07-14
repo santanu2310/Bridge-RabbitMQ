@@ -1,27 +1,29 @@
-from typing import Annotated, List, Optional
 import uuid
-from bson import ObjectId
 from datetime import datetime
+from typing import Annotated, List, Optional
+
 import boto3  # type: ignore
 from botocore.client import Config  # type: ignore
 from botocore.exceptions import ClientError  # type: ignore
-from fastapi import APIRouter, Depends, status, Body, HTTPException, Query
+from bson import ObjectId
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 
+from app.background_tasks.celery.tasks import process_media_message
 from app.core.config import settings
 from app.core.db import (
     AsyncDatabase,
     get_async_database,
 )
-from app.deps import get_user_from_access_token_http
 from app.core.schemas import (
-    UserAuthOut,
-    MessageData,
-    Message,
     FileInfo,
     FileType,
+    Message,
+    MessageData,
+    UserAuthOut,
 )
+from app.deps import get_user_from_access_token_http
+
 from .services import get_or_create_conversation
-from app.background_tasks.celery.tasks import process_media_message
 
 router = APIRouter()
 
@@ -54,6 +56,7 @@ async def get_message_status_updates(
         return {"message_status_updates": message_list}
     except Exception as e:
         print(e)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
 
 @router.get("/upload-url")

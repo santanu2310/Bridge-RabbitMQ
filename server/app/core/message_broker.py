@@ -1,20 +1,22 @@
-import logging
-import json
 import asyncio
+import json
+import logging
 from functools import wraps
-from typing import Dict, Callable, Awaitable
-from fastapi import WebSocket
-from pika import BlockingConnection, URLParameters  # type: ignore
-from pika.exceptions import UnroutableError  # type: ignore
-from aio_pika import connect_robust, Message
+from typing import Awaitable, Callable, Dict
+
+from aio_pika import Message, connect_robust
 from aio_pika.abc import (
-    AbstractRobustConnection,
-    ExchangeType,
     AbstractChannel,
     AbstractExchange,
     AbstractQueue,
+    AbstractRobustConnection,
+    ExchangeType,
 )
 from aio_pika.exceptions import AMQPConnectionError
+from fastapi import WebSocket
+from pika import BlockingConnection, URLParameters  # type: ignore
+from pika.exceptions import UnroutableError  # type: ignore
+
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -91,15 +93,10 @@ def publish_bloking_message(
             exchange=exchange_name, routing_key=topic, body=body, mandatory=True
         )
 
-        logger.info(f"Message published on {topic}: {data}")
-
     except UnroutableError as e:
         logger.error(f"Message was returned [Unroutable] : {e}")
     except Exception as e:
         logger.error(f"Failed to publish message: {e}")
-    finally:
-        if channel is not None:
-            channel.close()
 
 
 def rabbit_consumer(
@@ -129,9 +126,6 @@ def rabbit_consumer(
                         )
 
                         await queue.bind(exchange, routing_key=topic_name)
-                        logger.critical(
-                            f"waiting for message in queue from {topic_name}"
-                        )
 
                         async with queue.iterator() as queue_iter:
                             async for message in queue_iter:
