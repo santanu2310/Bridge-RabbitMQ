@@ -266,9 +266,12 @@ class MessageStatusUpdate(BaseModel):
 
 class FriendUpdateMessage(BaseModel):
     type: Literal[SyncMessageType.friend_update] = SyncMessageType.friend_update
-    full_name: Optional[str]
-    bio: Optional[str]
-    profile_picture: Optional[str]
+    id: PyObjectId
+    full_name: Optional[str] = None
+    bio: Optional[str] = None
+    location: str | None = None
+    profile_picture: Optional[str] = None
+    banner_picture: Optional[str] = None
 
 
 class FriendRequestMessage(BaseModel):

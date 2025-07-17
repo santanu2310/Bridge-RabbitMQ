@@ -48,6 +48,7 @@ class AsyncDatabase(BaseDatabase):
 
 class SyncDatabase(BaseDatabase):
     def __init__(self, client: MongoClient, db_name: str):
+        self.client = client
         self.db = client.get_database(db_name)
         super().__init__(self.db)
 

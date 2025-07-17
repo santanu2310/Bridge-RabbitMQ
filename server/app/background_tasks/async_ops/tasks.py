@@ -4,6 +4,7 @@ from app.core.config import settings
 from app.api.sync_socket.router import send_message as send_sync_message
 from app.core.schemas import (
     MessageEvent,
+    FriendUpdateMessage,
     MessageStatusUpdate,
     Message,
     FriendRequestDB,
@@ -39,17 +40,18 @@ async def watch_user_updates():
                 cursor = db.friends.find({"user_id": change["fullDocument"]["auth_id"]})
 
                 # Extracting the `friends_id` values from each result document
-                friends_ids = [doc["friend_id"] async for doc in cursor]
+                friend_ids = [doc["friend_id"] async for doc in cursor]
 
-                logger.critical(f"{friends_ids=}")
                 # Sending the data to the online frinds
-                await send_sync_message(
-                    friends_ids, change["updateDescription"]["updatedFields"]
-                )
+                data: dict[str:any] = change["updateDescription"]["updatedFields"]
+                data["id"] = change["fullDocument"]["auth_id"]
+
+                friend_update = FriendUpdateMessage.model_validate(data)
+                await send_sync_message(friend_ids, friend_update)
 
                 # updating the lastupdate fo friends data
                 await db.friends.update_many(
-                    {"friends_id": change["documentKey"]["_id"]},
+                    {"friend_id": change["fullDocument"]["auth_id"]},
                     {"$set": {"update_at": change["wallTime"]}},
                 )
 
@@ -178,5 +180,4 @@ async def watch_friend_requests():
 async def profile_media_update_confirmation(
     message: AbstractIncomingMessage,
 ):
-    logger.error(f"{message=}")
     await send_profilemedia_update_confirmation(data=message)
