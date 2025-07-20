@@ -6,6 +6,8 @@ import IconGroupes from "@/components/icons/IconGroupes.vue";
 import IconFriends from "@/components/icons/IconFriends.vue";
 import IconCall from "@/components/icons/IconCall.vue";
 import NavButton from "@/components/NavButton.vue";
+import { getUserColor } from "@/utils/ProfileUtils";
+import { getInitials } from "@/utils/StringUtils";
 
 const userStore = useUserStore();
 </script>
@@ -41,16 +43,27 @@ const userStore = useUserStore();
     <div
       class="w-1/4 lg:w-full h-full lg:h-auto aspect-square flex flex-col items-center"
     >
-    <NavButton :text="'Profile'" @click="$emit('switchContainer', 'profile')">
-      <div class="w-auto lg:w-3/5 h-3/5 lg:h-auto aspect-square overflow-hidden rounded-full cursor-pointer">
-        <img
-          :src="userStore.user.profilePicUrl ?? undefined"
-          alt=""
-          class="w-full h-full object-cover"
-        />
-      </div>
-      
-    </NavButton>
+      <NavButton :text="'Profile'" @click="$emit('switchContainer', 'profile')">
+        <div
+          class="w-auto lg:w-3/5 h-3/5 lg:h-auto aspect-square overflow-hidden rounded-full cursor-pointer"
+        >
+          <img
+            :src="userStore.user.profilePicUrl ?? undefined"
+            alt=""
+            class="w-full h-full object-cover"
+            v-if="userStore.user.profilePicUrl"
+          />
+          <div
+            v-else
+            class="w-full h-full flex items-center justify-center"
+            :style="{ background: getUserColor(userStore.user.fullName) }"
+          >
+            <span class="w-fit h-fit block text-white text-xs font-medium">{{
+              getInitials(userStore.user.fullName)
+            }}</span>
+          </div>
+        </div>
+      </NavButton>
     </div>
   </div>
 </template>

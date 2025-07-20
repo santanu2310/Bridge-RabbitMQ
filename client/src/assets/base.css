@@ -61,7 +61,25 @@
   box-sizing: border-box;
   margin: 0;
   font-weight: normal;
+  /* scrollbar-width: thin;
+  scrollbar-color: #555 transparent; */
 }
+
+/* For Chrome, Edge, and Safari */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 3px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #404040; /* dark gray */
+  border-radius: 4px;
+}
+
 
 body {
   width: 100vw;

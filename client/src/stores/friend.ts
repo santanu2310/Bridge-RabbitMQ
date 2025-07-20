@@ -27,13 +27,11 @@ export const useFriendStore = defineStore("friend", () => {
   async function listFriend() {
     try {
       // Get cached friend records from IndexedDB
-      const result: { newlyCreated: boolean; objects: User[] } =
-        (await indexedDbService.getAllRecords("friends")) as {
-          newlyCreated: boolean;
-          objects: User[];
-        };
+      const result: User[] = (await indexedDbService.getAllRecords(
+        "friends"
+      )) as User[];
 
-      let friends_list: User[] = result.objects;
+      let friends_list: User[] = result;
 
       // Create blob urls for user profile and banner
       if (friends_list) {
@@ -129,7 +127,7 @@ export const useFriendStore = defineStore("friend", () => {
         "conversationId",
         IDBKeyRange.only(conversation.id as string)
       );
-      const oldMessages = (await request).objects as Message[];
+      const oldMessages = (await request) as Message[];
       return oldMessages;
     } else {
       //retrive from server
@@ -205,40 +203,34 @@ export const useFriendStore = defineStore("friend", () => {
     id: string,
     data: profileMediaUrls
   ): Promise<profileMediaUrls | null> {
+    if (data.avatar == null && data.banner == null) return null;
+
     try {
-      let profileMediaData: profileMedia = {
-        id: id,
-        avatar: null,
-        banner: null,
+      // Stores the actual binary blobs for IndexedDB
+      const profileMediaData: profileMedia = { id, avatar: null, banner: null };
+
+      const mediaUrls: profileMediaUrls = { avatar: null, banner: null };
+
+      const fetchAndProcess = async (key: keyof profileMediaUrls) => {
+        const mediaUrl = data[key];
+        if (!mediaUrl) return null;
+
+        const imageResponse = await fetch(mediaUrl);
+        const blob = await imageResponse.blob();
+        console.log(imageResponse);
+        profileMediaData[key] = blob;
+        mediaUrls[key] = URL.createObjectURL(blob);
       };
 
-      let mediaUrls: profileMediaUrls = {
-        avatar: null,
-        banner: null,
-      };
-      if (data.avatar == null && data.banner == null) return null;
+      // Parallel fetch avatar and banner
+      await Promise.all([fetchAndProcess("avatar"), fetchAndProcess("banner")]);
 
-      if (data.avatar) {
-        const avatar = await fetch(data.avatar);
-        const avatarBlob = await avatar.blob();
-        mediaUrls.avatar = URL.createObjectURL(avatarBlob);
-
-        profileMediaData.avatar = avatarBlob;
-      }
-
-      if (data.banner) {
-        const banner = await fetch(data.banner);
-        const bannerBlob = await banner.blob();
-        mediaUrls.banner = URL.createObjectURL(bannerBlob);
-
-        profileMediaData.banner = bannerBlob;
-      }
-
+      // Store the media blobs in IndexedDB
       await indexedDbService.updateRecord("profileMedia", profileMediaData);
 
       return mediaUrls;
     } catch (error) {
-      console.error("getProfileMedia encountered an error:", error);
+      console.error(`failed to process profile media for friend ${id}:`, error);
       return null;
     }
   }

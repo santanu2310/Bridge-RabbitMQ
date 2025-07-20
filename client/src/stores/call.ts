@@ -63,6 +63,13 @@ export const useCallStore = defineStore("call", () => {
           initiationTime: msg.timestamp,
           description: msg.description,
         };
+
+        // Create a new RTCPeerConnection and prepare local media
+        pc.value = await createRTCPeerConnection(
+          configuration,
+          currentCallState.value.callerId,
+          currentCallState.value.isCameraOn
+        );
       }
 
       // Handle ICE candidate message
@@ -134,7 +141,7 @@ export const useCallStore = defineStore("call", () => {
   async function createRTCPeerConnection(
     configuration: object,
     receiverId: string,
-    video: boolean = false,
+    video: boolean = false
   ): Promise<RTCPeerConnection> {
     // Create a new RTCPeerConnection with the provided configuration
     const peerConnection = new RTCPeerConnection(configuration);
@@ -240,20 +247,25 @@ export const useCallStore = defineStore("call", () => {
   // Accepts an incoming WebRTC call by setting the remote description and sending an answer
   async function acceptCall() {
     // Ensure we have a valid offer description and call ID before proceeding
-    if (!currentCallState.value?.description || !currentCallState.value.callId)
+    if (
+      !currentCallState.value?.description ||
+      !currentCallState.value.callId ||
+      !pc.value
+    ) {
+      console.log("cant prosieed with call function");
       return;
-
+    }
     currentCallState.value.callStatus = "accepted";
     console.log(currentCallState.value.isCameraOn);
-    // Create a new RTCPeerConnection and prepare local media
-    pc.value = await createRTCPeerConnection(
-      configuration,
-      currentCallState.value.callerId,
-      currentCallState.value.isCameraOn,
-    );
+    // // Create a new RTCPeerConnection and prepare local media
+    // pc.value = await createRTCPeerConnection(
+    //   configuration,
+    //   currentCallState.value.callerId,
+    //   currentCallState.value.isCameraOn
+    // );
     // Set the received offer as the remote description
     await pc.value.setRemoteDescription(
-      new RTCSessionDescription(currentCallState.value.description),
+      new RTCSessionDescription(currentCallState.value.description)
     );
 
     // Create an SDP answer in response to the offer
@@ -323,6 +335,19 @@ export const useCallStore = defineStore("call", () => {
     return !currentState;
   }
 
+  function alterVideoStream(): boolean {
+    if (!localStream.value) return false;
+
+    // Get the current stete of local video stream
+    const currentState = localStream.value.getVideoTracks()[0]?.enabled ?? true;
+
+    // Togle the stete of video tracks
+    localStream.value?.getVideoTracks().forEach((track) => {
+      track.enabled = !currentState;
+    });
+
+    return !currentState;
+  }
   // async function getCallRecord(call_id: string): Promise<CallRecord> {
   //   try {
   //     const response = await authStore.authAxios({
@@ -347,14 +372,12 @@ export const useCallStore = defineStore("call", () => {
   async function loadOldRecords() {
     // Retrieve all records from the “callLog” object store, ordered by “endedAt” descending.
     // TODO: The function should accept two parameter (dateBefore and noOfRecord).
-    const oldReocrds: CallRecord[] = (
-      await indexedDbService.getAllRecords(
-        "callLog",
-        "endedAt",
-        undefined,
-        "prev",
-      )
-    ).objects as CallRecord[];
+    const oldReocrds: CallRecord[] = (await indexedDbService.getAllRecords(
+      "callLog",
+      "endedAt",
+      undefined,
+      "prev"
+    )) as CallRecord[];
 
     // Push all retrieved records into the reactive callRecords array.
     callRecords.value.push(...oldReocrds);
@@ -377,7 +400,7 @@ export const useCallStore = defineStore("call", () => {
       // Check for a successful response
       if (response.status !== 200)
         throw new Error(
-          `Failed to fetch call record. Status: ${response.status}`,
+          `Failed to fetch call record. Status: ${response.status}`
         );
 
       // Transform the response data into CallRecord objects array
@@ -408,6 +431,7 @@ export const useCallStore = defineStore("call", () => {
     remoteStream,
     localStream,
     alterAudioStream,
+    alterVideoStream,
     syncCallLogs,
   };
 });

@@ -55,15 +55,11 @@ export const useUserStore = defineStore("user", () => {
         user.email = response.data.email;
         user.bio = response.data.bio;
         user.location = response.data.location;
-        user.profilePicUrl = await getProfileUrl(
-          response.data.profile_picture,
+        user.profilePicUrl = await getProfileBlobUrl(
+          response.data.profile_picture
         );
-        user.banner = await getProfileUrl(
-          response.data.banner_picture,
-        )
+        user.banner = await getProfileBlobUrl(response.data.banner_picture);
         user.joinedDate = response.data.created_at;
-
-        console.log(user)
       }
     } catch (error) {
       authStore.isAuthenticated = false;
@@ -93,18 +89,23 @@ export const useUserStore = defineStore("user", () => {
 
   async function getProfileUrl(key: string | null): Promise<string | null> {
     if (key == null) return null;
+
     const response = await authStore.authAxios({
       method: "get",
       url: `users/download-url?key=${key}`,
     });
 
-    if (response.status === 200) {
-      const imageResponse = await fetch(response.data);
-      const blob = await imageResponse.blob();
-      return URL.createObjectURL(blob);
-    }
+    if (response.status === 200) return response.data;
 
     return null;
+  }
+
+  async function getProfileBlobUrl(url: string | null): Promise<string | null> {
+    const s3_url = await getProfileUrl(url);
+    if (s3_url == null) return null;
+    const imageResponse = await fetch(s3_url);
+    const blob = await imageResponse.blob();
+    return URL.createObjectURL(blob);
   }
 
   return {

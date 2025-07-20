@@ -2,15 +2,14 @@
 import IconCall from "@/components/icons/IconCall.vue";
 import IconMic from "@/components/icons/IconMic.vue";
 import IconMicOff from "@/components/icons/IconMicOff.vue";
-import IconSpeaker from "@/components/icons/IconSpeaker.vue";
+import IconVideoCall from "@/components/icons/IconVideoCall.vue";
+import IconVideoOff from "@/components/icons/IconVideoOff.vue";
 import IconArrow from "@/components/icons/IconArrow.vue";
-
 import type { User } from "@/types/User";
-
 import { useCallStore } from "@/stores/call";
 import { useFriendStore } from "@/stores/friend";
 import { useUserStore } from "@/stores/user";
-import { ref, watch, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
 
 const callStore = useCallStore();
 const friendStore = useFriendStore();
@@ -20,14 +19,68 @@ const userData = ref<User | null>(null);
 
 const localVideoElement = ref<HTMLVideoElement | null>(null);
 const remoteVideoElement = ref<HTMLVideoElement | null>(null);
+const callUI = ref<HTMLElement | null>(null);
 
 const unMute = ref<boolean>(true);
-const elapsedSeconds = ref<number>(0);
+const video = ref<boolean>(true);
+const controlsVisible = ref<boolean>(true);
 const callAccepted = ref<boolean>(false);
 
-let cleanupWatcher: (() => void) | null = null;
-let timer: number | null = null;
+const elapsedSeconds = ref<number>(0);
+const callTimer = ref<number | null>(null);
 
+const hideTimeout = ref<number | null>(4);
+const countdownInterval = ref<number | null>(null);
+let isTouch = "ontouchstart" in window;
+
+// Cleanup functions
+let watchers: (() => void)[] = [];
+
+// Get the userId who is either calling or being called
+const otherUserId = computed(() => {
+  if (!callStore.currentCallState) return null;
+  return callStore.currentCallState.callerId === userStore.user.id
+    ? callStore.currentCallState.calleeId
+    : callStore.currentCallState.callerId;
+});
+
+// For the UI elements
+
+function showControls() {
+  controlsVisible.value = true;
+  resetTimer();
+}
+
+function hideControls() {
+  clearTimeout(hideTimeout.value!);
+  if (callAccepted) controlsVisible.value = false;
+}
+
+function resetTimer() {
+  if (!hideTimeout.value) return;
+  clearTimeout(hideTimeout.value);
+
+  hideTimeout.value = setTimeout(() => {
+    hideControls();
+  }, 4000);
+}
+
+function clearAllTimeouts() {
+  if (hideTimeout.value) {
+    clearTimeout(hideTimeout.value);
+    hideTimeout.value = null;
+  }
+  if (countdownInterval.value) {
+    clearInterval(countdownInterval.value);
+    countdownInterval.value = null;
+  }
+  if (callTimer.value) {
+    clearInterval(callTimer.value);
+    callTimer.value = null;
+  }
+}
+
+// Format seconds into a readable time string
 function formatTime(second: number): string {
   let min = Math.floor(second / 60);
   let hour = Math.floor(min / 60);
@@ -41,80 +94,127 @@ function formatTime(second: number): string {
   return `${hour}:${pad(min % 60)}:${pad(second % 60)}`;
 }
 
-onMounted(() => {
-  if (callStore.currentCallState == null) return;
-  const userId =
-    callStore.currentCallState.callerId == userStore.user.id
-      ? callStore.currentCallState.calleeId
-      : callStore.currentCallState.callerId;
+// Attach media stream to the video element (plays the video stream)
+async function attachStreamToVideo(
+  stream: MediaStream | null,
+  videoElement: HTMLVideoElement | null,
+  isLocal = false
+) {
+  if (!stream || !videoElement) return;
 
-  userData.value = friendStore.friends[userId];
+  try {
+    videoElement.srcObject = stream;
+    await videoElement.play();
+  } catch (err) {
+    console.error(`${isLocal ? "Local" : "Remote"} video play error:`, err);
+  }
+}
 
-  console.log(userData);
+// Setup event listeners for showing/hiding controls based on user interaction
+function setupEventListeners() {
+  if (!callUI.value) return;
 
-  watch(callStore.currentCallState, () => {
-    if (
-      callStore.currentCallState?.callStatus != "accepted" ||
-      !callStore.currentCallState.startTime
-    )
-      return;
+  const element = callUI.value;
 
-    callAccepted.value = true;
-    timer = setInterval(() => {
-      if (!callStore.currentCallState?.startTime) return;
-      elapsedSeconds.value = Math.floor(
-        (Date.now() -
-          new Date(callStore.currentCallState.startTime).getTime()) /
-          1000,
-      );
-    }, 1000);
-  });
-});
+  if (isTouch) {
+    const touchHandler = (e: TouchEvent) => {
+      e.preventDefault();
+      showControls();
+    };
+    element.addEventListener("touchstart", touchHandler);
+    element.addEventListener("touchmove", touchHandler);
 
-onMounted(() => {
-  // whenever remoteStream changes, attach it to the <audio>
-  cleanupWatcher = watch(
+    // Cleanup function to remove touch listeners
+    return () => {
+      element.removeEventListener("touchstart", touchHandler);
+      element.removeEventListener("touchmove", touchHandler);
+    };
+  } else {
+    // For mouse devices: show/hide controls on hover/mouse movement
+    element.addEventListener("mouseenter", showControls);
+    element.addEventListener("mouseleave", hideControls);
+    element.addEventListener("mousemove", showControls);
+
+    // Cleanup function to remove mouse event listeners
+    return () => {
+      element.removeEventListener("mouseenter", showControls);
+      element.removeEventListener("mouseleave", hideControls);
+      element.removeEventListener("mousemove", showControls);
+    };
+  }
+}
+
+// Setup watchers to listen for stream changes and attach them to video elements
+function setupStreamWatchers() {
+  // Watch for changes in remote stream
+  const remoteWatcher = watch(
     () => callStore.remoteStream,
-    async (stream) => {
-      if (stream && remoteVideoElement.value) {
-        remoteVideoElement.value.srcObject = stream;
-        await remoteVideoElement.value
-          .play()
-          .catch((err) => console.error("Audio play error:", err));
-      }
-    },
-    { immediate: true },
+    (stream) => attachStreamToVideo(stream, remoteVideoElement.value, false)
   );
-  watch(
+
+  // Watch for changes in local stream
+  const localWatcher = watch(
     () => callStore.localStream,
-    async (stream) => {
-      if (stream && localVideoElement.value) {
-        localVideoElement.value.srcObject = stream;
-        try {
-          await localVideoElement.value.play();
-        } catch (err) {
-          console.warn("Local video play error:", err);
-        }
-      }
-    },
-    { immediate: true },
+    (stream) => attachStreamToVideo(stream, localVideoElement.value, true)
   );
+
+  return [remoteWatcher, localWatcher];
+}
+
+// Watch call state changes to update UI and start call timer after acceptance
+function setupCallStateWatcher() {
+  return watch(
+    () => callStore.currentCallState,
+    (callState) => {
+      console.log("current call state ", callStore.currentCallState);
+      if (!callState) return;
+      if (callState.callStatus != "accepted" || !callState.startTime) return;
+
+      // Update user data
+      if (otherUserId.value && friendStore.friends[otherUserId.value]) {
+        userData.value = friendStore.friends[otherUserId.value];
+      }
+
+      // Start the call timer
+      callAccepted.value = true;
+      callTimer.value = setInterval(() => {
+        if (!callState.startTime) return;
+        elapsedSeconds.value = Math.floor(
+          (Date.now() - new Date(callState.startTime).getTime()) / 1000
+        );
+      }, 1000);
+    },
+    { immediate: true, deep: true }
+  );
+}
+
+onMounted(() => {
+  const eventCleanup = setupEventListeners();
+  if (eventCleanup) {
+    watchers.push(eventCleanup);
+  }
+  // Setup watchers
+  const streamWatchers = setupStreamWatchers();
+  const callStateWatcher = setupCallStateWatcher();
+
+  console.log("call accepted ", callAccepted.value);
+
+  watchers.push(...streamWatchers, callStateWatcher);
 });
 
 onBeforeUnmount(() => {
-  if (cleanupWatcher) cleanupWatcher();
+  // Clean up all watchers and event listeners
+  watchers.forEach((cleanup) => cleanup());
+  watchers = [];
 
-  if (timer) {
-    clearInterval(timer);
-    timer = null;
-  }
+  clearAllTimeouts();
 
-  // Optional: stop all tracks when leaving
   callStore.remoteStream?.getTracks().forEach((t) => t.stop());
+  callStore.localStream?.getTracks().forEach((t) => t.stop());
 });
 </script>
 <template>
-  <div class="w-full max-w-[1024px] h-full flex flex-col">
+  <div class="w-full max-w-[1024px] h-full flex flex-col relative" ref="callUI">
     <div class="w-full h-8 px-3 pt-2 flex items-center justify-between">
       <button
         class="h-full aspect-square rounded-md flex items-center justify-center -rotate-90 lg:rotate-180"
@@ -127,6 +227,7 @@ onBeforeUnmount(() => {
     >
       <div
         class="w-1.2 h-auto flex flex-col items-center justify-center absolute left-1/2 -translate-x-1/2 bg-transparent z-10"
+        v-if="controlsVisible"
       >
         <span class="text-base font-semibold">{{ userData?.fullName }} </span>
         <span
@@ -164,7 +265,7 @@ onBeforeUnmount(() => {
       </div>
       <div
         class="w-28 h-48 absolute bottom-5 right-5 transition duration-1000"
-        :class="{ calling: !callAccepted }"
+        :class="{ calling: !callAccepted, 'bottom-20': controlsVisible }"
       >
         <video
           class="w-full h-full object-cover"
@@ -193,11 +294,16 @@ onBeforeUnmount(() => {
         <IconCall :size="40" :rotate="135" />
       </button>
     </div>
-    <div class="w-full h-16 flex items-center justify-around" v-else>
+    <div
+      class="w-full h-16 flex items-center justify-around absolute bottom-5 left-0 bg-transparent"
+      v-else-if="controlsVisible"
+    >
       <button
         class="h-3/4 w-auto aspect-square rounded-full flex items-center justify-center cursor-pointer duration-200 hover:bg-color-background-mute"
+        @click="video = callStore.alterVideoStream()"
       >
-        <IconSpeaker :size="40" />
+        <IconVideoCall :size="40" v-if="video" />
+        <IconVideoOff :size="40" v-else />
       </button>
       <button
         class="h-3/4 w-auto aspect-square rounded-full flex items-center justify-center cursor-pointer duration-200 hover:bg-color-background-mute"

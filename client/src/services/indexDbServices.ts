@@ -46,7 +46,7 @@ class IndexedDbService {
     return new Promise<void>((resolve, rejects) => {
       const request: IDBOpenDBRequest = window.indexedDB.open(
         DB_NAME,
-        DB_VERSION,
+        DB_VERSION
       );
 
       request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
@@ -104,7 +104,7 @@ class IndexedDbService {
 
       request.onerror = () => {
         rejects(
-          new Error(`Failed to add record to the store :${request.error}`),
+          new Error(`Failed to add record to the store :${request.error}`)
         );
       };
     });
@@ -127,7 +127,6 @@ class IndexedDbService {
       const request = store.put(data);
 
       request.onsuccess = () => {
-        // console.log(request?.result);
         resolve(request.result);
       };
 
@@ -140,7 +139,7 @@ class IndexedDbService {
   async getRecord(
     storeName: string,
     id: string | null,
-    indexes?: { [key: string]: string },
+    indexes?: { [key: string]: string }
   ): Promise<object> {
     if (!this.db) {
       await this.openDb();
@@ -186,16 +185,13 @@ class IndexedDbService {
     indexName?: string,
     range?: IDBKeyRange,
     direction: IDBCursorDirection = "next",
-    count: number | undefined = undefined,
-  ): Promise<{ newlyCreated: boolean; objects: object[] }> {
+    count: number | undefined = undefined
+  ): Promise<object[]> {
     if (!this.db) {
       await this.openDb();
     }
 
-    return new Promise<{
-      newlyCreated: boolean;
-      objects: object[];
-    }>((resolve, rejects) => {
+    return new Promise<object[]>((resolve, rejects) => {
       if (!this.db) {
         rejects(new Error("Database is not open."));
         return;
@@ -225,10 +221,7 @@ class IndexedDbService {
             cursor.continue();
           } else {
             // No more records (or we've hit the count limit), so resolve with results.
-            resolve({
-              newlyCreated: this.newlyCreated,
-              objects: results,
-            });
+            resolve(results);
           }
         };
         // If the cursor request fails, reject the promise with the error.
@@ -240,10 +233,7 @@ class IndexedDbService {
         const request = store.getAll(null, count);
 
         request.onsuccess = () => {
-          resolve({
-            newlyCreated: this.newlyCreated,
-            objects: request.result,
-          });
+          resolve(request.result);
         };
 
         request.onerror = () => {
@@ -255,7 +245,7 @@ class IndexedDbService {
 
   async deleteRecord(
     storeName: string,
-    key: string,
+    key: string
   ): Promise<{ objectId: string }> {
     if (!this.db) {
       await this.openDb();
@@ -310,7 +300,7 @@ class IndexedDbService {
         request.onerror = (event: Event) => {
           console.error(
             "Failed to insert record:",
-            (event.target as IDBRequest).error,
+            (event.target as IDBRequest).error
           );
           errorOccurred = true;
         };
@@ -331,6 +321,7 @@ class IndexedDbService {
   }
 
   async clearDatabase() {
+    this.db?.close();
     const dbRequest = indexedDB.deleteDatabase(DB_NAME);
     dbRequest.onerror = () => console.error("Error deleting database");
     dbRequest.onsuccess = () => console.log("Database deleted successfully");
