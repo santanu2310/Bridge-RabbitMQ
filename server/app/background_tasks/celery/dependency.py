@@ -57,8 +57,9 @@ class DependencyManager:
                 return True
 
             elif dependency == Dependency.queue:
-                # Check RabbitMQ connection
-                return connection.is_open and not connection.is_closed
+                channel = connection.channel()
+                channel.close()
+                return True
 
         except Exception as e:
             logger.warning(f"Health check failed for {dependency.value}: {e}")
