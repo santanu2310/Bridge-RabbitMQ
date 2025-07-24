@@ -34,4 +34,4 @@ jobs:
           netlify deploy \
             --site=$NETLIFY_SITE_ID \
             --prod \
-            --dir=dist  # Change this to your actual build directory
+            --dir=dist
