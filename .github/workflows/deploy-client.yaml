@@ -18,8 +18,10 @@ jobs:
         with:
           node-version: "22"
           cache: "npm"
+          cache-dependency-path: "client/package-lock.json"
 
       - name: Install & build
+        working-directory: ./client
         run: |
           npm ci
           npm run build
@@ -35,4 +37,4 @@ jobs:
           netlify deploy \
             --site=$NETLIFY_SITE_ID \
             --prod \
-            --dir=dist
+            --dir=client/dist
