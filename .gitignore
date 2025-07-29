@@ -1,3 +1,13 @@
+# Local development data
 /development/mongodb
 /development/rabbitmq
 /development/kafka_data
+
+# Terraform
+**/.terraform/*
+**/terraform.tfstate
+**/terraform.tfstate.*
+**/*.tfplan
+**/tfplan.binary
+**/plan.json
+**/.terraform.lock.hcl
