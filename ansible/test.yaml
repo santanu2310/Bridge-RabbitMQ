@@ -1,0 +1,29 @@
+- name: 4. Initialize the MongoDB Replica Set
+  hosts: db[0] # Changed to match your inventory
+  become: yes
+  tasks:
+    - name: Install PyMongo for Ansible MongoDB modules
+      apt:
+        name: python3-pymongo
+        state: present
+
+    - name: Wait for MongoDB to be ready on the primary node
+      wait_for:
+        port: 27017
+        delay: 10
+        timeout: 60
+
+    - name: Initialize the replica set
+      community.mongodb.mongodb_replicaset:
+        login_host: "{{ inventory_hostname }}"
+        replica_set: "{{ replica_set_name }}"
+        members: "{{ groups['db'] | map('extract', hostvars, ['ansible_host']) | map('regex_replace','(:\\d+)?$', ':27017') | list }}"
+
+
+        auth_mechanism: MONGODB-X509
+        ssl: true
+        ssl_ca_certs: "/etc/ssl/mongodb/cert.pem"
+      register: result
+      until: result is succeeded
+      retries: 5
+      delay: 10

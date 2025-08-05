@@ -11,3 +11,4 @@
 **/tfplan.binary
 **/plan.json
 **/.terraform.lock.hcl
+**/.terraform.tfstate.lock.info

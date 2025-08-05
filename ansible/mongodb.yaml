@@ -1,0 +1,158 @@
+- name: Install MongoDB on all nodes
+  hosts: db
+  become: yes
+  tasks:
+    - name: Update apt package index
+      apt:
+        update_cache: yes
+
+    - name: Upgrade all packages
+      apt:
+        upgrade: dist
+
+    - name: Install prerequisites
+      apt:
+        name: ["gnupg", "curl", "snapd"]
+        state: present
+        update_cache: yes
+
+    - name: Download MongoDB 8.0 GPG key
+      ansible.builtin.get_url:
+        url: https://pgp.mongodb.com/server-8.0.asc
+        dest: /usr/share/keyrings/mongodb-server-8.0.asc
+        mode: "0644"
+
+    - name: Dearmor MongoDB 8.0 GPG key
+      ansible.builtin.command:
+        cmd: gpg --dearmor -o /usr/share/keyrings/mongodb-server-8.0.gpg /usr/share/keyrings/mongodb-server-8.0.asc
+        creates: /usr/share/keyrings/mongodb-server-8.0.gpg
+
+    - name: Add MongoDB 8.0 repository for Ubuntu 24.04 (Noble)
+      ansible.builtin.apt_repository:
+        repo: "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-8.0.gpg ] https://repo.mongodb.org/apt/ubuntu noble/mongodb-org/8.0 multiverse"
+        state: present
+        filename: mongodb-org-8.0
+
+    - name: Install MongoDB
+      apt:
+        name: mongodb-org
+        state: present
+        update_cache: true
+      notify: Start MongoDB
+
+  handlers:
+    - name: Start MongoDB
+      service:
+        name: mongod
+        state: started
+        enabled: true
+
+- name: Configure MongoDB for Replica Set and TLS/SSL
+  hosts: db
+  become: yes
+  tasks:
+    - name: Configure MongoDB with replica set and TLS
+      template:
+        src: mongod.conf.j2
+        dest: /etc/mongod.conf
+      notify: Restart MongoDB
+
+  handlers:
+    - name: Restart MongoDB
+      service:
+        name: mongod
+        state: restarted
+        enabled: yes
+
+# - name: Install Certbot and Generate Certificates
+#   hosts: db
+#   become: yes
+#   tasks:
+#     - name: Install Certbot
+#       community.general.snap:
+#         name: certbot
+#         state: present
+#         classic: true
+
+#     - name: Generate Let's Encrypt certificate
+#       command: >
+#         certbot certonly --standalone
+#         -d {{ ansible_host }}
+#         --email {{ letsencrypt_email }}
+#         --agree-tos --non-interactive
+#       args:
+#         creates: /etc/letsencrypt/live/{{ inventory_hostname }}/fullchain.pem
+
+# - name: Deploy Certbot Renewal Hook Script
+#   hosts: all
+#   become: yes
+#   vars:
+#     local_script: script/deploy-mongo-cert.sh.j2
+#     remote_dir: /etc/letsencrypt/renewal-hooks/deploy
+#     remote_script: "{{ remote_dir }}/01-deploy-mongo-cert.sh"
+
+#   tasks:
+#     - name: Ensure deploy hook directory exists
+#       file:
+#         path: "{{ remote_dir }}"
+#         state: directory
+#         owner: root
+#         group: root
+#         mode: "0755"
+
+#     - name: Copy certbot deploy hook script
+#       template:
+#         src: "{{ local_script }}"
+#         dest: "{{ remote_script }}"
+#         owner: root
+#         group: root
+#         mode: "0755"
+
+#     - name: Execute the deploy hook script
+#       shell: "{{ remote_script }}"
+#       register: script_output
+#       failed_when: script_output.rc != 0
+
+#     - name: Display script execution output
+#       debug:
+#         msg: "Script output: {{ script_output.stdout }}"
+#       when: script_output.stdout is defined
+
+- name: Initialize the MongoDB Replica Set
+  hosts: db[0]
+  become: yes
+  tasks:
+    - name: Install PyMongo for Ansible MongoDB modules
+      apt:
+        name: python3-pymongo
+        state: present
+
+    - name: Wait for MongoDB to be ready on the primary node
+      wait_for:
+        port: 27017
+        delay: 10
+        timeout: 60
+
+    - name: Initialize the replica set
+      community.mongodb.mongodb_replicaset:
+        replica_set: "{{ replica_set_name }}"
+        members: "{{ groups['db'] | map('extract', hostvars, ['ansible_host']) | map('regex_replace','(:\\d+)?$', ':27017') | list }}"
+
+        # auth_mechanism: MONGODB-X509
+        # ssl: true
+        # ssl_ca_certs: "/etc/ssl/mongodb/fullchain.pem"
+      register: result
+      until: result is succeeded
+      retries: 0
+      delay: 10
+
+- name: Create MongoDB admin user with SSL
+  hosts: db[0]
+  tasks:
+    - name: Create MongoDB admin user with SSL
+      community.mongodb.mongodb_user:
+        database: admin
+        name: myadmin
+        password: mypassword
+        roles: ["root"]
+        ssl: true
