@@ -7,11 +7,19 @@ from pika.exceptions import AMQPConnectionError, ConnectionClosed
 from app.background_tasks.celery.dependency import get_dependency_manager, Dependency
 from app.core.config import create_celery_client, settings
 from app.core.message_broker import publish_bloking_message
-from app.core.schemas import MediaType, Message, ProfileMediaUpdate, UserProfile
+from app.core.schemas import (
+    MediaType,
+    Message,
+    ProfileMediaUpdate,
+    UserProfile,
+    FriendUpdateMessage,
+    BrodcastMessage,
+)
 from app.utils import get_file_extension
 from botocore.exceptions import ClientError, NoCredentialsError  # type: ignore
 
 from .services import process_image_to_aspect
+from .utils import list_friends_id
 
 celery_app = create_celery_client()
 
@@ -169,6 +177,8 @@ def process_profile_media(file_id: str, user_id: str, media_type: str):
                 return_document=ReturnDocument.BEFORE,
             )
 
+            friends_list = list_friends_id(user_id=ObjectId(user_id), db=db)
+
         user_profile: UserProfile = UserProfile.model_validate(user_profile_response)
 
         message = ProfileMediaUpdate(
@@ -189,6 +199,19 @@ def process_profile_media(file_id: str, user_id: str, media_type: str):
                 topic=settings.TOPICS.media_update,
                 data=data,
             )
+
+            # Send the updated user data to all friends
+            data = FriendUpdateMessage(**{"id": ObjectId(user_id), media_type: new_key})
+            payload = BrodcastMessage(ids=friends_list, data=data)
+
+            publish_bloking_message(
+                connection=queue,
+                exchange_name=settings.EXCHANGES.sync_message.value,
+                topic=settings.TOPICS.chat_broadcast_selected.value,
+                data=payload.model_dump_json(),
+            )
+
+            logger.error(f"{payload=}")
     except Exception as e:
         logger.exception(
             f"Infrastructure error processing media for user {user_id}: {e}"

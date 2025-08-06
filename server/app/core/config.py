@@ -25,6 +25,8 @@ class Settings(BaseSettings):
         online_status = "online_status"
         media_update = "media_update"
         message = "message"
+        message_status_update = "message.status.update"
+        chat_broadcast_selected = "chat.broadcast.selected"
 
     class EXCHANGES(str, Enum):
         sync_message = "sync_message"

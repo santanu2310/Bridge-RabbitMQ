@@ -11,12 +11,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.api import router
 
 from app.background_tasks.async_ops.tasks import (
-    watch_user_updates,
     handle_online_status_update,
-    watch_message_updates,
+    process_message_status_updates,
     distribute_published_messages,
     watch_friend_requests,
     profile_media_update_confirmation,
+    send_message_to_users,
 )
 
 from app.core.message_broker import create_rabbit_connection, create_rabbit_exchanges
@@ -51,11 +51,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
 
     app.state.background_tasks = [
         asyncio.create_task(watch_friend_requests()),
-        asyncio.create_task(watch_user_updates()),
         asyncio.create_task(handle_online_status_update(db=async_db)),
-        asyncio.create_task(watch_message_updates()),
+        asyncio.create_task(process_message_status_updates(db=async_db)),
         asyncio.create_task(distribute_published_messages(db=async_db)),
         asyncio.create_task(profile_media_update_confirmation()),
+        asyncio.create_task(send_message_to_users()),
     ]
 
     yield {
