@@ -210,16 +210,14 @@ async def send_message(user_ids: List[ObjectId], message_data: SyncSocketMessage
         message_data : The message to send.
     """
 
-    try:
-        # logger.error(user_ids)
-        for user_id in user_ids:
-            # logger.error(f"{message_data.model_dump_json()=}")
+    for user_id in user_ids:
+        try:
             if connections.is_online(user_id):
                 data_packet = SyncPacket(type=PacketType.message, data=message_data)
 
                 await connections.send_personal_message(user_id, data_packet)
-    except Exception as e:
-        print(e)
+        except Exception as e:
+            logger.error(f"Error sending message to user {user_id}: {e}")
 
 
 async def notify_online_status(
