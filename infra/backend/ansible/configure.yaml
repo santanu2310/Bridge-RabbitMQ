@@ -1,0 +1,83 @@
+- name: Deploy apps with Docker Compose and Nginx (using J2 templates)
+  hosts: all
+  become: yes
+  vars_files:
+    - secrets.yml
+  vars:
+    compose_dir: /opt/bridge
+  tasks:
+    - name: Ensure compose directory exists
+      file:
+        path: "{{ compose_dir }}"
+        state: directory
+        mode: "0755"
+
+    # - name: Login to GHCR
+    #   docker_login:
+    #     registry_url: ghcr.io
+    #     username: "{{ github_username }}"
+    #     password: "{{ github_token }}"
+    #     reauthorize: yes
+
+    - name: Render docker-compose.yml from template
+      template:
+        src: templates/docker-compose.yml.j2
+        dest: "{{ compose_dir }}/docker-compose.yml"
+        mode: "0644"
+        backup: yes
+      notify: restart docker compose
+
+    - name: Ensure ACME webroot exists (if you use webroot challenges later)
+      file:
+        path: /var/www/html
+        state: directory
+        mode: "0755"
+
+    - name: Remove default nginx conf if present
+      file:
+        path: /etc/nginx/nginx.conf
+        state: absent
+
+    - name: Render Nginx config from template
+      template:
+        src: templates/nginx.conf.j2
+        dest: /etc/nginx/nginx.conf
+        mode: "0644"
+        backup: yes
+      notify: reload nginx
+
+    - name: Render Nginx conf.d from template
+      template:
+        src: templates/mysite.conf.j2
+        dest: /etc/nginx/conf.d/mysite.conf
+        mode: "0644"
+        backup: yes
+      notify: reload nginx
+
+    - name: Test Nginx config
+      command: nginx -t
+      changed_when: false
+
+    - name: Start Docker Compose services
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_dir }}"
+        state: present
+        pull: always
+
+    - name: Enable and start Nginx
+      systemd:
+        name: nginx
+        state: started
+        enabled: yes
+
+  handlers:
+    - name: restart docker compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ compose_dir }}"
+        state: present
+        pull: always
+
+    - name: reload nginx
+      systemd:
+        name: nginx
+        state: reloaded
