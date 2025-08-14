@@ -1,0 +1,25 @@
+# Where and how to store data.
+storage:
+  dbPath: /var/lib/mongodb
+#  engine:
+#  wiredTiger:
+
+# where to write logging data.
+systemLog:
+  destination: file
+  logAppend: true
+  path: /var/log/mongodb/mongod.log
+
+# network interfaces
+net:
+  port: 27017
+  bindIp: localhost,0.0.0.0
+  tls:
+     mode: requireTLS
+     certificateKeyFile: /etc/ssl/mongodb/cert.pem
+     CAFile: /etc/ssl/mongodb/fullchain.pem
+     allowConnectionsWithoutCertificates: true
+
+# how the process runs
+processManagement:
+  timeZoneInfo: /usr/share/zoneinfo
