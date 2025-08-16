@@ -116,14 +116,13 @@ jobs:
       - name: Set up SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}"| base64 -d > ~/.ssh/azure_vm_key
-          cat ~/.ssh/azure_vm_key
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/azure_vm_key
           chmod 600 ~/.ssh/azure_vm_key
           ssh-keyscan -H ${{ secrets.AZURE_VM_HOST }} >> ~/.ssh/known_hosts
 
-      # - name: Deploy with Ansible
-      #   run: |
-      #     ansible-playbook -i ./infra/backend/ansible/inventory.ini ./infra/backend/ansible/redeploy.yml \
-      #       --extra-vars "@infra/backend/ansible/group_vars/server-redeploy.yml" \
-      #       -e "fastapi_image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_API }}:${{ github.sha }}" \
-      #       -e "celery_image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_CELERY }}:${{ github.sha }}"
+      - name: Deploy with Ansible
+        run: |
+          ansible-playbook -i ./infra/backend/ansible/inventory.ini ./infra/backend/ansible/redeploy.yml \
+            --extra-vars "@infra/backend/ansible/group_vars/server-redeploy.yml" \
+            -e "fastapi_image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_API }}:${{ github.sha }}" \
+            -e "celery_image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_CELERY }}:${{ github.sha }}"
