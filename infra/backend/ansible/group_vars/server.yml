@@ -1,0 +1,10 @@
+ansible_user: azureuser
+ansible_ssh_private_key_file: /home/santanu/.ssh/azure_vm_key
+email: s.m.23102004@gmail.com
+ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+ansible_python_interpreter: /usr/bin/python3
+nginx_container_name: nginx-proxy
+app_container_1_name: app1
+app_container_2_name: app2
+app1_port: 3001
+app2_port: 3002
