@@ -124,5 +124,5 @@ jobs:
         run: |
           ansible-playbook -i ./infra/backend/ansible/inventory.ini ./infra/backend/ansible/redeploy.yml \
             --extra-vars "@infra/backend/ansible/group_vars/server-redeploy.yml" \
-            -e "fastapi_image=${{ env.REGISTRY }}/$(echo ${{ env.IMAGE_NAME_API }}:${{ github.ref_name }}-${{ github.sha::7 }} | tr '[:upper:]' '[:lower:]'):${{ github.sha }}" \
-            -e "celery_image=${{ env.REGISTRY }}/$(echo ${{ env.IMAGE_NAME_CELERY }}:${{ github.ref_name }}-${{ github.sha::7 }} | tr '[:upper:]' '[:lower:]'):${{ github.sha }}"
+            -e "fastapi_image=${{ env.REGISTRY }}/$(echo ${{ env.IMAGE_NAME_API }}:${{ github.ref_name }}-${{ github.sha:0:7 }} | tr '[:upper:]' '[:lower:]'):${{ github.sha }}" \
+            -e "celery_image=${{ env.REGISTRY }}/$(echo ${{ env.IMAGE_NAME_CELERY }}:${{ github.ref_name }}-${{ github.sha:0:7 }} | tr '[:upper:]' '[:lower:]'):${{ github.sha }}"
