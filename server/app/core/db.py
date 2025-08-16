@@ -54,7 +54,6 @@ class SyncDatabase(BaseDatabase):
 
 
 def create_async_client() -> AsyncIOMotorClient:
-    logger.critical("crate async client is being used")
     return AsyncIOMotorClient(settings.MONGOD_URL)
 
 

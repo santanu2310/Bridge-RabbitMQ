@@ -1,157 +1,210 @@
 name: bridge-1
 
 services:
-    rabbitmq:
-        hostname: rabbitmq
-        image: rabbitmq:latest
-        container_name: rabbitmq-dev
-        expose:
-            - "5672"
-        ports:
-            - "5672:5672"
-            - "15672:15672"
-        environment:
-            RABBITMQ_DEFAULT_USER: bridge-bot
-            RABBITMQ_DEFAULT_PASS: Mybridge1936
+  rabbitmq:
+    hostname: rabbitmq
+    image: rabbitmq:latest
+    container_name: rabbitmq-dev
+    expose:
+      - "5672"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: bridge-bot
+      RABBITMQ_DEFAULT_PASS: Mybridge1936
 
-        volumes:
-            - ./rabbitmq:/var/lib/rabbitmq/
-            - ./rabbitmq/log:/var/log/rabbitmq
+    volumes:
+      - ./rabbitmq:/var/lib/rabbitmq/
+      - ./rabbitmq/log:/var/log/rabbitmq
 
-        healthcheck:
-            test: [ "CMD", "rabbitmq-diagnostics", "status" ]
-            interval: 15s
-            timeout: 5s
-            retries: 5
-        deploy:
-            resources:
-                limits:
-                    cpus: "1.0"
-                    memory: 1G
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "status"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
 
-    mongo-setup:
-        container_name: mongo-setup
-        image: mongo
-        restart: on-failure
+  mongo-setup:
+    container_name: mongo-setup
+    image: mongo
+    restart: on-failure
 
-        volumes:
-            - ./scripts:/scripts
-        entrypoint: [ "/scripts/setup.sh" ]
-        depends_on:
-            mongo1:
-                condition: service_healthy
-            mongo2:
-                condition: service_healthy
-            mongo3:
-                condition: service_healthy
+    volumes:
+      - ./scripts:/scripts
+    entrypoint: ["/scripts/setup.sh"]
+    depends_on:
+      mongo1:
+        condition: service_healthy
+      mongo2:
+        condition: service_healthy
+      mongo3:
+        condition: service_healthy
 
-    mongo1:
-        hostname: mongo1
-        container_name: localmongo1
-        image: mongo
-        expose:
-            - "27017"
-        ports:
-            - "27017:27017"
-        restart: always
-        entrypoint: [ "mongod", "--replSet", "rs0", "--bind_ip_all", "--dbpath", "/data/db", "--oplogSize", "128" ]
-        healthcheck:
-            test: [ "CMD", "mongosh", "--eval", "'db.runCommand({ ping: 1 })'" ]
-            interval: 20s
-            timeout: 15s
-            retries: 5
-            start_period: 10s
+  mongo1:
+    hostname: mongo1
+    container_name: localmongo1
+    image: mongo
+    expose:
+      - "27017"
+    ports:
+      - "27017:27017"
+    restart: always
+    entrypoint:
+      [
+        "mongod",
+        "--replSet",
+        "rs0",
+        "--bind_ip_all",
+        "--dbpath",
+        "/data/db",
+        "--oplogSize",
+        "128",
+      ]
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "'db.runCommand({ ping: 1 })'"]
+      interval: 20s
+      timeout: 15s
+      retries: 5
+      start_period: 10s
 
-        volumes:
-            - ./mongodb/mongo/data1/db:/data/db
-            # - ./mongodb/mongo/data1/configdb:/data/configdb
-    mongo2:
-        hostname: mongo2
-        container_name: localmongo2
-        image: mongo
-        expose:
-            - "27017"
-        ports:
-            - "27018:27017"
-        restart: always
-        entrypoint: [ "mongod", "--replSet", "rs0", "--bind_ip_all", "--dbpath", "/data/db", "--oplogSize", "128" ]
-        healthcheck:
-            test: [ "CMD", "mongosh", "--eval", "'db.runCommand({ ping: 1 })'" ]
-            interval: 20s
-            timeout: 15s
-            retries: 5
-            start_period: 10s
+    volumes:
+      - ./mongodb/mongo/data1/db:/data/db
+      # - ./mongodb/mongo/data1/configdb:/data/configdb
+  mongo2:
+    hostname: mongo2
+    container_name: localmongo2
+    image: mongo
+    expose:
+      - "27017"
+    ports:
+      - "27018:27017"
+    restart: always
+    entrypoint:
+      [
+        "mongod",
+        "--replSet",
+        "rs0",
+        "--bind_ip_all",
+        "--dbpath",
+        "/data/db",
+        "--oplogSize",
+        "128",
+      ]
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "'db.runCommand({ ping: 1 })'"]
+      interval: 20s
+      timeout: 15s
+      retries: 5
+      start_period: 10s
 
-        volumes:
-            - ./mongodb/mongo/data2/db:/data/db
-            # - ./mongodb/mongo/data2/configdb:/data/configdb
-    mongo3:
-        hostname: mongo3
-        container_name: localmongo3
-        image: mongo
-        expose:
-            - "27017"
-        ports:
-            - "27019:27017"
-        restart: always
-        entrypoint: [ "mongod", "--replSet", "rs0", "--bind_ip_all", "--dbpath", "/data/db", "--oplogSize", "128" ]
-        healthcheck:
-            test: [ "CMD", "mongosh", "--eval", "'db.runCommand({ ping: 1 })'" ]
-            interval: 20s
-            timeout: 15s
-            retries: 5
-            start_period: 10s
+    volumes:
+      - ./mongodb/mongo/data2/db:/data/db
+      # - ./mongodb/mongo/data2/configdb:/data/configdb
+  mongo3:
+    hostname: mongo3
+    container_name: localmongo3
+    image: mongo
+    expose:
+      - "27017"
+    ports:
+      - "27019:27017"
+    restart: always
+    entrypoint:
+      [
+        "mongod",
+        "--replSet",
+        "rs0",
+        "--bind_ip_all",
+        "--dbpath",
+        "/data/db",
+        "--oplogSize",
+        "128",
+      ]
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "'db.runCommand({ ping: 1 })'"]
+      interval: 20s
+      timeout: 15s
+      retries: 5
+      start_period: 10s
 
-        volumes:
-            - ./mongodb/mongo/data3/db:/data/db
-            # - ./mongodb/mongo/data3/configdb:/data/configdb
+    volumes:
+      - ./mongodb/mongo/data3/db:/data/db
+      # - ./mongodb/mongo/data3/configdb:/data/configdb
 
-    celery:
-        build:
-            context: ../server
-            dockerfile: ./Dockerfile.celery
+  celery:
+    build:
+      context: ../server
+      dockerfile: ./Dockerfile.celery
 
-        command: [ "uv", "run", "watchfiles", "--ignore-paths", "./app.log", "--sigint-timeout", "30", "/server/.venv/bin/python -m celery -A app.background_tasks.celery.tasks worker --pool solo --loglevel=INFO" ]
+    command:
+      [
+        "uv",
+        "run",
+        "watchfiles",
+        "--ignore-paths",
+        "./app.log",
+        "--sigint-timeout",
+        "30",
+        "/server/.venv/bin/python -m celery -A app.background_tasks.celery.tasks worker --pool solo --loglevel=INFO",
+      ]
 
-        volumes:
-            - ../server/app:/server/app:consistent
-        depends_on:
-            rabbitmq:
-                condition: service_healthy
+    volumes:
+      - ../server/app:/server/app:consistent
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
 
-    app:
-        container_name: bridge-server
-        build:
-            context: ../server
-            dockerfile: ./Dockerfile
-        ports:
-            - "8000:8000"
-        volumes:
-            - ../server/app:/server/app
+  app:
+    container_name: bridge-server
+    build:
+      context: ../server
+      dockerfile: ./Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../server/app:/server/app
 
-        command: [ "uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "/server/app" ]
-        depends_on:
-            rabbitmq:
-                condition: service_healthy
-            mongo-setup:
-                condition: service_completed_successfully
-            celery:
-                condition: service_started
-            # coturn:
-            #     condition: service_started
+    command:
+      [
+        "uv",
+        "run",
+        "uvicorn",
+        "app.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--reload",
+        "--reload-dir",
+        "/server/app",
+      ]
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mongo-setup:
+        condition: service_completed_successfully
+      celery:
+        condition: service_started
+      # coturn:
+      #     condition: service_started
 
-    coturn:
-        image: coturn/coturn:4.6.3-alpine
-        container_name: coturn
-        restart: unless-stopped
-        ports:
-        - "3478:3478"     # STUN/TURN over UDP & TCP
-        - "3478:3478/udp"
-        - "5349:5349"     # TURN over TLS
-        - "5349:5349/udp"
-        - "49152-49200:49152-49200/udp"  # UDP relay ports
-        volumes:
-        - ./turnserver.conf:/etc/coturn/turnserver.conf:ro
-        # environment:
-        # - PUBLIC_IP=YOUR.SERVER.IP   # or DETECT_EXTERNAL_IP=yes
-        # - STATIC_AUTH_SECRET=changeme
+  coturn:
+    image: coturn/coturn:4.6.3-alpine
+    container_name: coturn
+    restart: unless-stopped
+    ports:
+      - "3478:3478" # STUN/TURN over UDP & TCP
+      - "3478:3478/udp"
+      - "5349:5349" # TURN over TLS
+      - "5349:5349/udp"
+      - "49152-49200:49152-49200/udp" # UDP relay ports
+    volumes:
+      - ./turnserver.conf:/etc/coturn/turnserver.conf:ro
+    # environment:
+    # - PUBLIC_IP=YOUR.SERVER.IP   # or DETECT_EXTERNAL_IP=yes
+    # - STATIC_AUTH_SECRET=changeme

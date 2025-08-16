@@ -77,13 +77,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
 def create_app() -> FastAPI:
     app = FastAPI(lifespan=lifespan)
 
-    origins = ["http://localhost:8000", "http://localhost:5173"]
-
     app.include_router(router=router)
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=origins,
+        allow_origins=settings.ALLOW_ORIGINS,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

@@ -12,12 +12,12 @@ export const useAuthStore = defineStore("authentication", () => {
   const baseUrl = "http://localhost:8000/";
 
   const authAxios = axios.create({
-    baseURL: "http://localhost:8000/",
+    baseURL: baseUrl,
     withCredentials: true,
   });
 
   const publicAxios = axios.create({
-    baseURL: "http://localhost:8000/",
+    baseURL: baseUrl,
   });
 
   // Axios interceptor to catch unauthentication error and retry after retriving the auth tokens
@@ -49,7 +49,7 @@ export const useAuthStore = defineStore("authentication", () => {
         }
       }
       return Promise.reject(error); // For all other errors, return the error as is.
-    },
+    }
   );
 
   async function logOut() {
