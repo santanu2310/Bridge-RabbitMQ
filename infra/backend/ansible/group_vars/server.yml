@@ -1,7 +1,7 @@
-ansible_user: azureuser
-ansible_ssh_private_key_file: /home/santanu/.ssh/azure_vm_key
+ansible_user: ubuntu
+ansible_ssh_private_key_file: /home/santanu/.ssh/lightsail.pem
 email: s.m.23102004@gmail.com
-ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+ansible_ssh_common_args: "-o StrictHostKeyChecking=no"
 ansible_python_interpreter: /usr/bin/python3
 nginx_container_name: nginx-proxy
 app_container_1_name: app1
