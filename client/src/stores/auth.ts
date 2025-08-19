@@ -9,7 +9,7 @@ export const useAuthStore = defineStore("authentication", () => {
   const isLoading = ref(true);
   const isLoggingOut = ref<boolean>(false);
   const router = useRouter();
-  const baseUrl = "http://localhost:8000/";
+  const baseUrl = import.meta.env.VITE_API_BASE;
 
   const authAxios = axios.create({
     baseURL: baseUrl,
