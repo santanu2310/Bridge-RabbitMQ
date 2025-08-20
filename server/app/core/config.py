@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    ALLOW_ORIGINS: list[str] = ["http://localhost:8000", "http://localhost:5173"]
+    ALLOW_ORIGINS: str = ""
 
     # JWT secrets
     JWT_ACCESS_SECRET_KEY: str = ""

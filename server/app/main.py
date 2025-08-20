@@ -78,10 +78,10 @@ def create_app() -> FastAPI:
     app = FastAPI(lifespan=lifespan)
 
     app.include_router(router=router)
-
+    logger.error(f"{settings.ALLOW_ORIGINS=}")
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.ALLOW_ORIGINS,
+        allow_origins=[settings.ALLOW_ORIGINS],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
