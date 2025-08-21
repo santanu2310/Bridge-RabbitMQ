@@ -27,7 +27,7 @@ export const useMessageStore = defineStore("message", () => {
   const syncStore = useSyncStore();
   const authStore = useAuthStore();
 
-  const socket = new Socket(authStore.baseUrl);
+  const socket = new Socket(authStore.baseUrl + "message/scoket/");
   socket.connect();
 
   class UploadEmitter extends EventEmitter {}

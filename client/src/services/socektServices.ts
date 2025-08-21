@@ -59,6 +59,7 @@ export class Socket extends EventEmitter {
       console.warn("Socket is open.");
       return;
     }
+    console.log("socket url : ", this.url);
     this.socket = new WebSocket(this.url);
 
     this.socket.onopen = () => {
@@ -73,7 +74,7 @@ export class Socket extends EventEmitter {
       console.error("WebSocket error:", error);
       const response = await axios({
         method: "post",
-        url: import.meta.env.VITE_API_BASE + "users/refresh-token",
+        url: import.meta.env.VITE_API_BASE + "/users/refresh-token",
         withCredentials: true,
       });
 
