@@ -36,7 +36,7 @@ export const useSyncStore = defineStore("background_sync", () => {
     userStore.useOnlineStatusManager();
 
   // Creating a new socket instance and connecting it to server
-  const socket = new Socket("ws://localhost:8000/sync/");
+  const socket = new Socket(authStore.baseUrl);
   socket.connect();
 
   // Handle incoming WebSocket messages

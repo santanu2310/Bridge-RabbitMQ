@@ -28,7 +28,7 @@ async function handleUpdate() {
     try {
       const response = await authStore.authAxios({
         method: "patch",
-        url: "http://localhost:8000/users/update",
+        url: "/users/update",
         data: {
           [props.d_key]: userData.value,
         },

@@ -86,6 +86,7 @@ export const useAuthStore = defineStore("authentication", () => {
 
   return {
     isAuthenticated,
+    baseUrl,
     isLoading,
     isLoggingOut,
     authAxios,
