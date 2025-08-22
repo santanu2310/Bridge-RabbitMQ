@@ -1,77 +1,91 @@
 <script setup lang="ts">
-	import Loading from "./containers/Loading.vue";
-	import { useAuthStore } from "./stores/auth";
+import Loading from "./containers/Loading.vue";
+import { useAuthStore } from "./stores/auth";
 
-	const authStore = useAuthStore();
+const authStore = useAuthStore();
+
+function setAppHeight() {
+  const height = window.visualViewport
+    ? window.visualViewport.height
+    : window.innerHeight;
+
+  document.body.style.height = `${height}px`;
+}
+
+// Run once on load
+setAppHeight();
+
+// Update on resize (keyboard open/close)
+window.addEventListener("resize", setAppHeight);
 </script>
 
 <template>
-	<main>
-		<Loading v-if="authStore.isLoading" />
-		<RouterView v-else />
-	</main>
+  <main>
+    <Loading v-if="authStore.isLoading" />
+    <RouterView v-else />
+  </main>
 </template>
 
 <style scoped>
-	main {
-		width: 100%;
-		height: 100%;
-	}
+main {
+  width: 100%;
+  height: 100%;
+}
 
-	.logo {
-		display: block;
-		margin: 0 auto 2rem;
-	}
+.logo {
+  display: block;
+  margin: 0 auto 2rem;
+}
 
-	nav {
-		width: 100%;
-		font-size: 12px;
-		text-align: center;
-		margin-top: 2rem;
-	}
+nav {
+  width: 100%;
+  font-size: 12px;
+  text-align: center;
+  margin-top: 2rem;
+}
 
-	nav a.router-link-exact-active {
-		color: var(--color-text);
-	}
+nav a.router-link-exact-active {
+  color: var(--color-text);
+}
 
-	nav a.router-link-exact-active:hover {
-		background-color: transparent;
-	}
+nav a.router-link-exact-active:hover {
+  background-color: transparent;
+}
 
-	nav a {
-		display: inline-block;
-		padding: 0 1rem;
-		border-left: 1px solid var(--color-border);
-	}
+nav a {
+  display: inline-block;
+  padding: 0 1rem;
+  border-left: 1px solid var(--color-border);
+}
 
-	nav a:first-of-type {
-		border: 0;
-	}
+nav a:first-of-type {
+  border: 0;
+}
 
-	@media (min-width: 1024px) {
-		header {
-			display: flex;
-			place-items: center;
-			padding-right: calc(var(--section-gap) / 2);
-		}
+@media (min-width: 1024px) {
+  header {
+    display: flex;
+    place-items: center;
+    padding-right: calc(var(--section-gap) / 2);
+  }
 
-		.logo {
-			margin: 0 2rem 0 0;
-		}
+  .logo {
+    margin: 0 2rem 0 0;
+  }
 
-		header .wrapper {
-			display: flex;
-			place-items: flex-start;
-			flex-wrap: wrap;
-		}
+  header .wrapper {
+    display: flex;
+    place-items: flex-start;
+    flex-wrap: wrap;
+  }
 
-		nav {
-			text-align: left;
-			margin-left: -1rem;
-			font-size: 1rem;
+  nav {
+    text-align: left;
+    margin-left: -1rem;
+    font-size: 1rem;
 
-			padding: 1rem 0;
-			margin-top: 1rem;
-		}
-	}
+    padding: 1rem 0;
+    margin-top: 1rem;
+  }
+}
 </style>
