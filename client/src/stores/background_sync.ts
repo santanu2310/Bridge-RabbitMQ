@@ -41,7 +41,6 @@ export const useSyncStore = defineStore("background_sync", () => {
 
   // Handle incoming WebSocket messages
   socket.on("message", async (msg) => {
-    console.log(msg);
     try {
       switch (msg.type) {
         case "online_status":
@@ -308,8 +307,6 @@ export const useSyncStore = defineStore("background_sync", () => {
         url: url,
       });
 
-      console.log(response.data);
-
       // Process the response if the request is successful
       if (response.status === 200) {
         if (response.data.message_status_updates.length > 0) {
@@ -317,8 +314,6 @@ export const useSyncStore = defineStore("background_sync", () => {
           const messages: Message[] = response.data.message_status_updates.map(
             (msg: object) => mapResponseToMessage(msg)
           );
-
-          console.log(messages);
 
           // Store the updated message in indexedDB
           await indexedDbService.batchUpsert("message", messages);

@@ -59,7 +59,6 @@ export class Socket extends EventEmitter {
       console.warn("Socket is open.");
       return;
     }
-    console.log("socket url : ", this.url);
     this.socket = new WebSocket(this.url);
 
     this.socket.onopen = () => {

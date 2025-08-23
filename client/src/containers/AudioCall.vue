@@ -46,8 +46,6 @@ onMounted(() => {
 
   userData.value = friendStore.friends[userId];
 
-  console.log(userData);
-
   watch(callStore.currentCallState, () => {
     if (
       callStore.currentCallState?.callStatus != "accepted" ||
@@ -60,7 +58,7 @@ onMounted(() => {
       elapsedSeconds.value = Math.floor(
         (Date.now() -
           new Date(callStore.currentCallState.startTime).getTime()) /
-          1000,
+          1000
       );
     }, 1000);
   });
@@ -78,7 +76,7 @@ onMounted(() => {
           .catch((err) => console.error("Audio play error:", err));
       }
     },
-    { immediate: true },
+    { immediate: true }
   );
 });
 
