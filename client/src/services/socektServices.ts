@@ -73,7 +73,7 @@ export class Socket extends EventEmitter {
       console.error("WebSocket error:", error);
       const response = await axios({
         method: "post",
-        url: import.meta.env.VITE_API_BASE + "/users/refresh-token",
+        url: import.meta.env.VITE_API_BASE + "users/refresh-token",
         withCredentials: true,
       });
 

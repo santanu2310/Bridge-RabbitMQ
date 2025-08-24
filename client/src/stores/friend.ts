@@ -158,12 +158,17 @@ export const useFriendStore = defineStore("friend", () => {
           }
 
           //add the messages to the indesedDb
-          const oldMessages = response.data.messages.map((msg: object) =>
-            mapResponseToMessage(msg)
+          const oldMessages: Message[] = response.data.messages.map(
+            (msg: object) => mapResponseToMessage(msg)
           );
 
           indexedDbService.batchUpsert("message", oldMessages);
-
+          userStore.conversations[convResponse.id!] = {
+            messages: oldMessages,
+            isActive: true,
+            participant: convResponse.participant as string,
+            lastMessageDate: new Date().toISOString(),
+          };
           return oldMessages;
         }
         return null;

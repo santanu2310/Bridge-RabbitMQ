@@ -94,6 +94,14 @@ watch(
   }
 );
 
+watch(
+  () => userStore.currentConversation?.convId,
+  () => {
+    friend.value =
+      friendStore.friends[userStore.currentConversation?.receiverId as string];
+  }
+);
+
 function onSelectEmoji(emoji: object) {
   text.value = text.value + (emoji as { i: string }).i;
   console.log((emoji as { i: string }).i);
