@@ -31,7 +31,7 @@ const callTimer = ref<number | null>(null);
 
 const hideTimeout = ref<number | null>(4);
 const countdownInterval = ref<number | null>(null);
-let isTouch = "ontouchstart" in window;
+let isTouch = "ontouchend" in window;
 
 // Cleanup functions
 let watchers: (() => void)[] = [];
@@ -121,12 +121,12 @@ function setupEventListeners() {
       e.preventDefault();
       showControls();
     };
-    element.addEventListener("touchstart", touchHandler);
+    element.addEventListener("touchend", touchHandler);
     element.addEventListener("touchmove", touchHandler);
 
     // Cleanup function to remove touch listeners
     return () => {
-      element.removeEventListener("touchstart", touchHandler);
+      element.removeEventListener("touchend", touchHandler);
       element.removeEventListener("touchmove", touchHandler);
     };
   } else {
@@ -285,7 +285,7 @@ onBeforeUnmount(() => {
         type="button"
         class="h-3/4 w-auto aspect-square rounded-full flex items-center justify-center cursor-pointer duration-200 bg-green-500 text-color-white"
         @click="callStore.acceptCall()"
-        v-on:focus="console.log('clicked')"
+        @touchend="callStore.acceptCall()"
       >
         <IconCall :size="40" />
       </button>
@@ -293,6 +293,7 @@ onBeforeUnmount(() => {
         type="button"
         class="h-3/4 w-auto aspect-square rounded-full flex items-center justify-center cursor-pointer duration-200 bg-red-500 text-color-white"
         @click="callStore.hangup(callStore.currentCallState.callId!)"
+        @touchend="callStore.hangup(callStore.currentCallState.callId!)"
       >
         <IconCall :size="40" :rotate="135" />
       </button>
@@ -304,6 +305,7 @@ onBeforeUnmount(() => {
       <button
         class="h-3/4 w-auto aspect-square rounded-full flex items-center justify-center cursor-pointer duration-200 hover:bg-color-background-mute"
         @click="video = callStore.alterVideoStream()"
+        @touchend="video = callStore.alterVideoStream()"
       >
         <IconVideoCall :size="40" v-if="video" />
         <IconVideoOff :size="40" v-else />
@@ -311,6 +313,7 @@ onBeforeUnmount(() => {
       <button
         class="h-3/4 w-auto aspect-square rounded-full flex items-center justify-center cursor-pointer duration-200 hover:bg-color-background-mute"
         @click="unMute = callStore.alterAudioStream()"
+        @touchend="unMute = callStore.alterAudioStream()"
       >
         <IconMic v-if="unMute" :size="40" />
         <IconMicOff v-else :size="40" />
@@ -318,6 +321,7 @@ onBeforeUnmount(() => {
       <button
         class="h-3/4 w-auto aspect-square rounded-full flex items-center justify-center cursor-pointer duration-200 bg-red-500 text-color-white"
         @click="callStore.hangup(callStore.currentCallState?.callId!)"
+        @touchend="callStore.hangup(callStore.currentCallState?.callId!)"
       >
         <IconCall :size="40" :rotate="135" />
       </button>

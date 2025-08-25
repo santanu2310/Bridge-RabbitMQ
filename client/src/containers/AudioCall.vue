@@ -137,12 +137,14 @@ onBeforeUnmount(() => {
       <button
         class="h-3/4 w-auto aspect-square rounded-full flex items-center justify-center cursor-pointer duration-200 bg-green-500 text-color-white"
         @click="callStore.acceptCall()"
+        @touchend="callStore.acceptCall()"
       >
         <IconCall :size="40" />
       </button>
       <button
         class="h-3/4 w-auto aspect-square rounded-full flex items-center justify-center cursor-pointer duration-200 bg-red-500 text-color-white"
         @click="callStore.hangup(callStore.currentCallState.callId!)"
+        @touchend="callStore.hangup(callStore.currentCallState.callId!)"
       >
         <IconCall :size="40" :rotate="135" />
       </button>
@@ -163,6 +165,7 @@ onBeforeUnmount(() => {
       <button
         class="h-3/4 w-auto aspect-square rounded-full flex items-center justify-center cursor-pointer duration-200 bg-red-500 text-color-white"
         @click="callStore.hangup(callStore.currentCallState?.callId!)"
+        @touchend="callStore.hangup(callStore.currentCallState?.callId!)"
       >
         <IconCall :size="40" :rotate="135" />
       </button>
