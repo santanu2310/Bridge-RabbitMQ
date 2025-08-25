@@ -282,12 +282,15 @@ onBeforeUnmount(() => {
       v-if="callStore.currentCallState?.callStatus == 'incoming'"
     >
       <button
+        type="button"
         class="h-3/4 w-auto aspect-square rounded-full flex items-center justify-center cursor-pointer duration-200 bg-green-500 text-color-white"
         @click="callStore.acceptCall()"
+        v-on:focus="console.log('clicked')"
       >
         <IconCall :size="40" />
       </button>
       <button
+        type="button"
         class="h-3/4 w-auto aspect-square rounded-full flex items-center justify-center cursor-pointer duration-200 bg-red-500 text-color-white"
         @click="callStore.hangup(callStore.currentCallState.callId!)"
       >

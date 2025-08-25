@@ -34,6 +34,8 @@ function switchContainer(n: string) {
   leftContent.value = n;
 }
 
+function visibleWindow() {}
+
 // function getFriendProfileUrl(): string | null {
 // 	return friendStore.friends[userStore.ongoingCall!.participants[0]]
 // 		.profilePicUrl;
@@ -51,7 +53,10 @@ onUnmounted(() => {
   <main class="w-full min-h-full flex relative">
     <div
       class="w-full lg:w-[21rem] xl:w-[23.5rem] flex flex-col-reverse lg:flex-row"
-      v-if="userStore.isChatVisible == false || width > 1024"
+      v-if="
+        (userStore.isChatVisible == false || width > 1024) &&
+        (!userStore.currentCallState || width > 1024)
+      "
     >
       <div class="lg:w-12 xl:w-14 h-16 lg:h-full lg:block">
         <Navigation @switch-container="switchContainer" />
@@ -75,13 +80,16 @@ onUnmounted(() => {
       </div>
     </div>
     <div
-      v-if="userStore.isChatVisible || width > 1024"
+      v-if="
+        (userStore.isChatVisible || width > 1024) &&
+        (!userStore.currentCallState || width > 1024)
+      "
       class="message w-full flex flex-grow bg-color-background-soft"
     >
       <Conversation v-if="userStore.currentConversation" />
     </div>
     <div
-      class="lg:w-[40rem] xl:w-[44rem]"
+      class="w-full lg:w-[40rem] xl:w-[44rem]"
       v-if="userStore.currentCallState?.minimised == false"
     >
       <AudioCall v-if="userStore.currentCallState?.isCameraOn == false" />
