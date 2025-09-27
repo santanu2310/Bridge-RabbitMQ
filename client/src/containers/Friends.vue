@@ -105,9 +105,13 @@ async function searchUsers(query: string | null) {
 
       <div class="h-8 flex">
         <button
-          class="h-full aspect-square mr-3 flex items-center justify-center"
+          class="h-full aspect-square mr-3 flex items-center justify-center relative"
           @click="$emit('freindRequest')"
         >
+          <span
+            v-if="friendStore.friendRequests.length > 0"
+            class="w-2 h-auto aspect-square overflow-hidden rounded-full bg-red-500 absolute top-[18%] right-[22%] block"
+          ></span>
           <IconBell :size="55" />
         </button>
 
