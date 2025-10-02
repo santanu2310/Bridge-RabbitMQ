@@ -8,8 +8,6 @@ const props = defineProps<{
 }>();
 
 const initials = getInitials(props.userName);
-console.log(props.userName);
-console.log(initials);
 </script>
 
 <template>

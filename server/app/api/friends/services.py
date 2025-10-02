@@ -8,7 +8,7 @@ from app.core.db import AsyncDatabase
 from app.api.user.services import get_full_user
 from app.utils import create_presigned_download_url
 
-from .pipelines import search_user_by_full_name
+from .pipelines import search_user_by_name
 from .schemas import UserBrief
 
 logger = logging.getLogger(__name__)
@@ -28,15 +28,26 @@ async def search_user(
 ) -> list[UserBrief]:
     try:
         cursor = db.user_profile.aggregate(
-            search_user_by_full_name(name=query, user_id=current_user_id)
+            search_user_by_name(name=query, user_id=current_user_id)
         )
         users = await cursor.to_list(length=None)
+        logger.info(f"{users=}")
 
-        return [
-            UserBrief(**user)
-            for user in users
-            if user["friend_status"] != Friends_Status.accepted
-        ]
+        processed_user = []
+
+        for user in users:
+            if (
+                user["friend_status"] != Friends_Status.accepted
+                and user["id"] != current_user_id
+            ):
+                user_brief = UserBrief(**user)
+                user_brief.profile_picture = create_presigned_download_url(
+                    user_brief.profile_picture
+                )
+                processed_user.append(user_brief)
+        logger.info(f"{processed_user=}")
+        return processed_user
+
     except Exception as e:
         logger.critical(f"Internal Error : {e}")
         raise HTTPException(

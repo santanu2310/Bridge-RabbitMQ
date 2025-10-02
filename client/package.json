@@ -17,6 +17,7 @@
     "cropperjs": "^2.0.0",
     "events": "^3.3.0",
     "pinia": "^2.1.7",
+    "remixicon": "^4.6.0",
     "timers": "^0.1.1",
     "vue": "^3.4.29",
     "vue-advanced-cropper": "^2.8.9",

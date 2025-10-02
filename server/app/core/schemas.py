@@ -125,6 +125,14 @@ class UserRegistration(BaseModel):
     email: EmailStr
     password: str
 
+    @model_validator(mode="before")
+    @classmethod
+    def username_to_lower(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            username = data.get("username")
+            if isinstance(username, str):
+                data["username"] = username.lower()
+
 
 class UserBrief(BaseModel):
     id: PyObjectId

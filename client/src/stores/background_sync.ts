@@ -56,7 +56,7 @@ export const useSyncStore = defineStore("background_sync", () => {
             // Retrive the message from indexedDb
             const message = (await indexedDbService.getRecord(
               "message",
-              obj.message_id
+              obj.message_id,
             )) as Message;
 
             if (!message) continue; // Ensure message exists before proceeding
@@ -178,8 +178,9 @@ export const useSyncStore = defineStore("background_sync", () => {
       const conversations = (idbResponse as Conversation[]).sort(
         (a, b) =>
           new Date(b.lastMessageDate as string).getTime() -
-          new Date(a.lastMessageDate as string).getTime()
+          new Date(a.lastMessageDate as string).getTime(),
       );
+      console.log(conversations);
 
       //adding each conversation to the gloval conversations variable
       await Promise.all(
@@ -195,7 +196,7 @@ export const useSyncStore = defineStore("background_sync", () => {
           const messageRequest = await indexedDbService.getAllRecords(
             "message",
             "conversationId",
-            IDBKeyRange.only(conv.id as string)
+            IDBKeyRange.only(conv.id as string),
           );
 
           userStore.conversations[conv.id as string].messages = (
@@ -203,10 +204,11 @@ export const useSyncStore = defineStore("background_sync", () => {
           ).sort(
             (a, b) =>
               new Date(a.sendingTime as string).getTime() -
-              new Date(b.sendingTime as string).getTime()
+              new Date(b.sendingTime as string).getTime(),
           );
-        })
+        }),
       );
+      console.log(userStore.conversations);
 
       lastDate = conversations[0].lastMessageDate;
     }
@@ -257,7 +259,7 @@ export const useSyncStore = defineStore("background_sync", () => {
             id: conv.id,
             lastMessageDate: conv.last_message_date,
             participant: conv.participants.find(
-              (id) => id != userStore.user.id
+              (id) => id != userStore.user.id,
             ) as string,
             startDate: conv.start_date,
           };
@@ -271,7 +273,7 @@ export const useSyncStore = defineStore("background_sync", () => {
           userStore.conversations[conv.id] ??= {
             messages: [],
             participant: conv.participants.find(
-              (id) => id != userStore.user.id
+              (id) => id != userStore.user.id,
             ) as string,
             lastMessageDate: "",
             isActive: true,
@@ -283,9 +285,10 @@ export const useSyncStore = defineStore("background_sync", () => {
             conv.last_message_date;
 
           await sendMessage(statusUpdate);
-        })
+        }),
       );
     }
+    console.log(userStore.conversations);
   }
 
   async function syncMessageStatus() {
@@ -297,7 +300,7 @@ export const useSyncStore = defineStore("background_sync", () => {
       const conversations = (idbResponse as Conversation[]).sort(
         (a, b) =>
           new Date(b.lastMessageDate as string).getTime() -
-          new Date(a.lastMessageDate as string).getTime()
+          new Date(a.lastMessageDate as string).getTime(),
       );
 
       // Construct the API URL to fetch message status updates after the latest message date
@@ -312,7 +315,7 @@ export const useSyncStore = defineStore("background_sync", () => {
         if (response.data.message_status_updates.length > 0) {
           // Map response data to message object
           const messages: Message[] = response.data.message_status_updates.map(
-            (msg: object) => mapResponseToMessage(msg)
+            (msg: object) => mapResponseToMessage(msg),
           );
 
           // Store the updated message in indexedDB
