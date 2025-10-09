@@ -24,13 +24,13 @@ logger = logging.getLogger(__name__)
 
 async def create_rabbit_connection() -> AbstractRobustConnection:
     return await connect_robust(
-        url=settings.CELERY_BROKER_URL,
+        url=settings.RABBITMQ_URL,
         ssl=True,
     )
 
 
 def create_bloking_rabbit_connection() -> BlockingConnection:
-    parameters = URLParameters(settings.CELERY_BROKER_URL)
+    parameters = URLParameters(settings.RABBITMQ_URL)
     parameters.heartbeat = 30
     return BlockingConnection(parameters)
 
@@ -110,7 +110,7 @@ def rabbit_consumer(
         async def wrapper(*args, **kwargs) -> None:
             attempt = 0
             while attempt < max_retries:
-                connection = await connect_robust(url=settings.CELERY_BROKER_URL)
+                connection = await connect_robust(url=settings.RABBITMQ_URL)
 
                 async with connection:
                     try:

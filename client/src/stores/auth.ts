@@ -10,6 +10,11 @@ export const useAuthStore = defineStore("authentication", () => {
   const isLoggingOut = ref<boolean>(false);
   const router = useRouter();
   const baseUrl = import.meta.env.VITE_API_BASE;
+  const email = ref<string | null>(null);
+
+  function setEmail(value: string) {
+    email.value = value;
+  }
 
   const authAxios = axios.create({
     baseURL: baseUrl,
@@ -91,5 +96,7 @@ export const useAuthStore = defineStore("authentication", () => {
     authAxios,
     publicAxios,
     logOut,
+    email,
+    setEmail,
   };
 });

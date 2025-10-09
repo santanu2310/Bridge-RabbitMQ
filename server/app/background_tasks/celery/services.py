@@ -1,5 +1,8 @@
 from PIL import Image
 import io
+import smtplib
+from email.message import EmailMessage
+from app.core.config import settings
 
 
 def process_image_to_aspect(
@@ -38,3 +41,23 @@ def process_image_to_aspect(
     out.seek(0)
 
     return out
+
+
+def send_otp_email(to_email: str, otp: str):
+    msg = EmailMessage()
+    msg["Subject"] = "BRIDGE email verification OTP"
+    msg["From"] = settings.MAIL
+    msg["To"] = to_email
+
+    # Simple email body
+    body = f"Your OTP for verification is: {otp}"
+    msg.set_content(body)
+
+    # In the future, you can use templates here
+    # msg.add_alternative(html_template, subtype='html')
+
+    with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        server.starttls()
+        server.login(settings.MAIL, settings.MAIL_PASSKEY)
+        server.send_message(msg)
+    print(f"Email sent to {to_email}")

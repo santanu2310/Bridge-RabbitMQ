@@ -2,7 +2,7 @@ import os
 import uuid
 from typing import Optional
 from fastapi import HTTPException, status
-from passlib.context import CryptContext  # type: ignore
+import bcrypt
 import boto3  # type: ignore
 from botocore.client import Config  # type: ignore
 from botocore.exceptions import ClientError  # type: ignore
@@ -10,20 +10,14 @@ from botocore.exceptions import ClientError  # type: ignore
 from app.core.config import settings
 
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+def hash_password(password: str) -> str:
+    salt = bcrypt.gensalt()
+    hashed_password = bcrypt.hashpw(password.encode("utf-8"), salt)
+    return hashed_password.decode("utf-8")
 
 
-def generate_salt() -> str:
-    return os.urandom(10).hex()
-
-
-def hash_password(password: str, salt: str) -> str:
-    hashed_password = pwd_context.hash(password + salt)
-    return hashed_password
-
-
-def verify_password(password_hash: str, password_plain: str, salt: str):
-    return pwd_context.verify(password_plain + salt, password_hash)
+def verify_password(password_hash: str, password_plain: str):
+    return bcrypt.checkpw(password_plain.encode("utf-8"), password_hash.encode("utf-8"))
 
 
 def get_file_extension(filename: str) -> str:
@@ -92,3 +86,4 @@ def create_presigned_download_url(
     except ClientError as e:
         print(e)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST)
+

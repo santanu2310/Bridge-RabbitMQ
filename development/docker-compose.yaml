@@ -190,6 +190,8 @@ services:
         condition: service_completed_successfully
       celery:
         condition: service_started
+      redis:
+        condition: service_healthy
       # coturn:
       #     condition: service_started
 
@@ -208,3 +210,13 @@ services:
     # environment:
     # - PUBLIC_IP=YOUR.SERVER.IP   # or DETECT_EXTERNAL_IP=yes
     # - STATIC_AUTH_SECRET=changeme
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5

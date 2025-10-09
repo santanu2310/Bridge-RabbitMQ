@@ -22,16 +22,19 @@ from app.utils import (
 from app.background_tasks.celery.tasks import process_profile_media
 
 from app.deps import get_user_from_refresh_token, get_user_from_access_token_http
-from app.core.db import get_async_database, AsyncDatabase
+from app.core.db import get_async_database, AsyncDatabase, ReturnDocument
 from app.core.config import settings
+from app.core.redis import get_redis_conn, get_value, delete_key
 
 from .services import (
-    create_user,
+    register_new_user,
     update_user_profile,
     create_access_token,
     create_refresh_token,
     get_full_user,
 )
+
+from .schemas import EmailVerifyRequest
 
 router = APIRouter()
 
@@ -40,14 +43,47 @@ logger = logging.getLogger(__name__)
 
 @router.post("/register")
 async def user_register(
-    user: UserRegistration = Body(...), db: AsyncDatabase = Depends(get_async_database)
+    user: UserRegistration = Body(...),
+    db: AsyncDatabase = Depends(get_async_database),
+    redis_client=Depends(get_redis_conn),
 ):
-    try:
-        created = await create_user(db, user)
-        return JSONResponse(content=created, status_code=status.HTTP_201_CREATED)
+    created = await register_new_user(db=db, user=user, redis_client=redis_client)
+    return JSONResponse(content=created, status_code=status.HTTP_201_CREATED)
 
-    except HTTPException as e:
-        raise e
+
+@router.post("/verify-email")
+async def verify_email(
+    verify_request: EmailVerifyRequest = Body(...),
+    db: AsyncDatabase = Depends(get_async_database),
+    redis_client=Depends(get_redis_conn),
+):
+    stored_otp = await get_value(redis_conn=redis_client, key=verify_request.email)
+
+    if not stored_otp:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="OTP expired or not found. Please request a new one.",
+        )
+    if stored_otp != verify_request.otp:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Incorrect code",
+        )
+
+    updated_user = await db.user_auth.find_one_and_update(
+        {"email": verify_request.email},
+        {"$set": {"email_verified": True}},
+        return_document=ReturnDocument.AFTER,
+    )
+
+    if not updated_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Wrong email address",
+        )
+    await delete_key(redis_conn=redis_client, key=verify_request.email)
+
+    return {"message": "successfully verified email address"}
 
 
 @router.post("/get-token")
@@ -62,7 +98,7 @@ async def login_for_access_token(
             status_code=status.HTTP_404_NOT_FOUND, detail="User name not found"
         )
 
-    if not verify_password(user["password"], form_data.password, user["hashing_salt"]):
+    if not verify_password(user["password"], form_data.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",

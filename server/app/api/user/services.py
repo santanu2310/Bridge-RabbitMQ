@@ -1,47 +1,56 @@
 import jwt
+import random
+import asyncio
+import logging
 from bson import ObjectId
 from datetime import datetime, timedelta
 from typing import Dict, Any, List
 from fastapi import status
 from fastapi.exceptions import HTTPException
 from pymongo import ReturnDocument
-from app.utils import generate_salt, hash_password
+from redis.asyncio import Redis
+from app.utils import hash_password
+from app.background_tasks.celery.tasks import send_email
 from app.core.db import AsyncDatabase
 from app.core.schemas import (
     UserProfile,
-    UserAuth,
     UserRegistration,
     UpdatableUserText,
     UserOut,
 )
 from app.core.config import settings
+from app.core.redis import set_key_value
+from app.core.exceptions import UserAlreadyExistsError, InternalServerError
+from .repository import find_user_by_username_email, create_user, drop_user
 
 
-async def create_user(db: AsyncDatabase, user: UserRegistration):
-    if await db.user_auth.find_one(
-        {"$or": [{"username": user.username}, {"email": user.email}]}
+logger = logging.getLogger(__name__)
+
+
+async def register_new_user(
+    db: AsyncDatabase, user: UserRegistration, redis_client: Redis
+):
+    if await find_user_by_username_email(
+        db=db, username=user.username, email=user.email
     ):
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="username or email already exist",
-        )
+        raise UserAlreadyExistsError()
 
-    # Generate salt and hash the password
-    salt = generate_salt()
-    user.password = hash_password(user.password, salt)
+    created_user = None
+    try:
+        user.password = await asyncio.to_thread(hash_password, user.password)
+        created_user = await create_user(db, user)
 
-    raw_user_data: Dict[str, Any] = user.model_dump()
-    raw_user_data["hashing_salt"] = salt
+        otp = await create_and_store_otp(redis_conn=redis_client, email=user.email)
+        await asyncio.to_thread(send_email.delay, email=user.email, otp=otp)
 
-    # Create the user data using your UserAuth Pydantic model
-    user_data = UserAuth.model_validate(raw_user_data)
+        return created_user
+    except Exception as e:
+        logger.critical(f"Unexpected error occur e: {e}")
 
-    created = await db.user_auth.insert_one(user_data.model_dump(exclude={"id"}))
-
-    profile_data = UserProfile(auth_id=created.inserted_id, full_name=user.full_name)
-    await db.user_profile.insert_one(profile_data.model_dump(exclude={"id"}))
-
-    return {"message": "User created successfully"}
+        if created_user:
+            logger.info(f"Attempting to roll back creation of user {created_user}")
+            await drop_user(db=db, user_id=created_user)
+        raise InternalServerError()
 
 
 async def get_full_user(db: AsyncDatabase, user_id: ObjectId) -> UserOut:
@@ -123,3 +132,16 @@ def create_refresh_token(data: dict, expire_delta: timedelta | None = None):
         to_encode, key=settings.JWT_REFRESH_SECRET_KEY, algorithm=settings.ALGORITHM
     )
     return encoded_jwt
+
+
+async def create_and_store_otp(redis_conn: Redis, email: str) -> str:
+    """
+    Generates a 6-digit OTP and stores it in Redis with the user's email as the key.
+    The OTP expires in 10 minutes.
+    """
+    otp = "".join([str(random.randint(0, 9)) for _ in range(6)])
+
+    await set_key_value(
+        redis_conn=redis_conn, key=email, value=otp, ex=600
+    )  # Expires in 600 seconds (10 minutes)
+    return otp

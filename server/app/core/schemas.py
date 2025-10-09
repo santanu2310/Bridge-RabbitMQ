@@ -95,7 +95,7 @@ class UserAuth(BaseModel):
     username: str
     email: EmailStr
     password: str
-    hashing_salt: str
+    email_verified: bool = False
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -132,6 +132,7 @@ class UserRegistration(BaseModel):
             username = data.get("username")
             if isinstance(username, str):
                 data["username"] = username.lower()
+        return data
 
 
 class UserBrief(BaseModel):
