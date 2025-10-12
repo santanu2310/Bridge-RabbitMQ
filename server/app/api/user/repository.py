@@ -12,18 +12,13 @@ logger = logging.getLogger(__name__)
 async def find_user_by_username_email(
     db: AsyncDatabase, username: str, email: str
 ) -> Optional[UserAuthOut]:
-    try:
-        user_auth = await db.user_auth.find_one(
-            {"$or": [{"username": username}, {"email": email}]}
-        )
-        if not user_auth:
-            return None
+    user_auth = await db.user_auth.find_one(
+        {"$or": [{"username": username}, {"email": email}]}
+    )
+    if not user_auth:
+        return None
 
-        return UserAuthOut(**user_auth)
-
-    except PyMongoError as e:
-        logger.critical(f"Failed to query db for user returning error: {e}")
-        raise InternalServerError()
+    return UserAuthOut(**user_auth)
 
 
 async def create_user(db: AsyncDatabase, user: UserRegistration) -> ObjectId:
