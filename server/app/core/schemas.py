@@ -103,6 +103,7 @@ class UserAuthOut(BaseModel):
     id: PyObjectId = Field(validation_alias="_id")
     username: str
     email: EmailStr
+    email_verified: bool
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -148,6 +149,7 @@ class UserOut(BaseModel):
     username: str
     full_name: str | None = None
     email: EmailStr
+    email_verified: bool
     bio: str | None = None
     profile_picture: str | None = None
     banner_picture: Optional[str] = None

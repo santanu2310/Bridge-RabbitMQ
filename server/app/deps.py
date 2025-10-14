@@ -1,8 +1,9 @@
 import jwt
+import logging
 from datetime import datetime
 from typing import Annotated
 from bson import ObjectId
-from fastapi import HTTPException, status, Cookie, Depends
+from fastapi import HTTPException, status, Cookie, Depends, WebSocketException
 from app.core.schemas import UserAuthOut
 from app.core.config import settings
 from app.core.db import (
@@ -10,6 +11,9 @@ from app.core.db import (
     get_async_database,
     get_async_database_from_socket,
 )
+from app.core.exceptions import EmailNotVerifiedError
+
+logger = logging.getLogger(__name__)
 
 
 async def get_user_from_refresh_token(
@@ -91,15 +95,30 @@ async def get_user_from_access_token_http(
     return await _get_user_from_access_token(access_token=access_token, db=db)
 
 
+async def get_verified_user(
+    user: UserAuthOut = Depends(get_user_from_access_token_http),
+) -> UserAuthOut:
+    if not user.email_verified:
+        raise EmailNotVerifiedError()
+
+    return user
+
+
 async def get_user_from_access_token_ws(
     access_token: Annotated[str, Cookie(alias="access_t")],
     db: AsyncDatabase = Depends(get_async_database_from_socket),
 ) -> UserAuthOut:
-    return await _get_user_from_access_token(access_token=access_token, db=db)
+    user = await _get_user_from_access_token(access_token=access_token, db=db)
+    if not user.email_verified:
+        logger.error("raising socket exception for email not being verified")
+        raise WebSocketException(code=4004, reason="email not verified")
+
+    return user
 
 
 __all__ = [
     "get_user_from_refresh_token",
     "get_user_from_access_token_http",
+    "get_verified_user",
     "get_user_from_access_token_ws",
 ]

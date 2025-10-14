@@ -41,6 +41,7 @@ const router = createRouter({
       ],
       beforeEnter: () => {
         const authStore = useAuthStore();
+        if (authStore.unVerifiedEmail == true) return;
         if (authStore.isAuthenticated == true) {
           return { name: "home" };
         }

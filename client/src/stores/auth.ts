@@ -7,6 +7,7 @@ import { indexedDbService } from "@/services/indexDbServices";
 export const useAuthStore = defineStore("authentication", () => {
   const isAuthenticated = ref(true);
   const isLoading = ref(true);
+  const unVerifiedEmail = ref(true);
   const isLoggingOut = ref<boolean>(false);
   const router = useRouter();
   const baseUrl = import.meta.env.VITE_API_BASE;
@@ -54,7 +55,7 @@ export const useAuthStore = defineStore("authentication", () => {
         }
       }
       return Promise.reject(error); // For all other errors, return the error as is.
-    }
+    },
   );
 
   async function logOut() {
@@ -90,6 +91,7 @@ export const useAuthStore = defineStore("authentication", () => {
 
   return {
     isAuthenticated,
+    unVerifiedEmail,
     baseUrl,
     isLoading,
     isLoggingOut,

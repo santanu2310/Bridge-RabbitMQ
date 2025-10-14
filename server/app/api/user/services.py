@@ -43,7 +43,7 @@ async def register_new_user(
         otp = await create_and_store_otp(redis_conn=redis_client, email=user.email)
         await asyncio.to_thread(send_email.delay, email=user.email, otp=otp)
 
-        return created_user
+        return {"email": user.email, "status": "User created successfully"}
     except Exception as e:
         logger.critical(f"Unexpected error occur e: {e}")
 
@@ -51,6 +51,19 @@ async def register_new_user(
             logger.info(f"Attempting to roll back creation of user {created_user}")
             await drop_user(db=db, user_id=created_user)
         raise InternalServerError()
+
+
+async def email_verify_request(
+    user_id: ObjectId, db: AsyncDatabase, redis_client: Redis
+):
+    user = await db.user_auth.find_one({"_id": user_id})
+    if not user:
+        raise
+
+    otp = await create_and_store_otp(redis_conn=redis_client, email=user["email"])
+    await asyncio.to_thread(send_email.delay, email=user["email"], otp=otp)
+
+    return {"status": "OTP send successfulle"}
 
 
 async def get_full_user(db: AsyncDatabase, user_id: ObjectId) -> UserOut:

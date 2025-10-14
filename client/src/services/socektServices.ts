@@ -69,7 +69,7 @@ export class Socket extends EventEmitter {
 
     this.socket.onclose = this.onClose.bind(this);
 
-    this.socket.onerror = async (error) => {
+    this.socket.onerror = async (error: Event): Promise<void> => {
       console.error("WebSocket error:", error);
       const response = await axios({
         method: "post",

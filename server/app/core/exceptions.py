@@ -29,7 +29,7 @@ class InternalServerError(AppException):
 
 
 class EmailNotVerifiedError(AppException):
-    """ " Exception raised when a user's email is not verified"""
+    """Exception raised when a user's email is not verified"""
 
     def __init__(self, detail: str = "User email is not verified"):
-        super().__init__(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
+        super().__init__(status_code=status.HTTP_406_NOT_ACCEPTABLE, detail=detail)

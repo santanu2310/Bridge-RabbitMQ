@@ -35,12 +35,11 @@ async function register() {
       },
     });
 
-    if (response.status === 201) {
+    if (response.status === 201 || response.status === 200) {
       authStore.setEmail(response.data.email);
       router.push({ name: "verify-email" });
     }
   } catch (error) {
-    console.error(error);
     const axiosError = error as {
       response: { data: { detail: string } };
     };

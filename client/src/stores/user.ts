@@ -3,6 +3,7 @@ import { reactive, ref } from "vue";
 import { useAuthStore } from "@/stores/auth";
 import type { User } from "@/types/User";
 import type { Message } from "@/types/Message";
+import router from "@/router";
 import type { callState } from "@/types/Commons";
 
 export const useUserStore = defineStore("user", () => {
@@ -56,10 +57,20 @@ export const useUserStore = defineStore("user", () => {
         user.bio = response.data.bio;
         user.location = response.data.location;
         user.profilePicUrl = await getProfileBlobUrl(
-          response.data.profile_picture
+          response.data.profile_picture,
         );
         user.banner = await getProfileBlobUrl(response.data.banner_picture);
         user.joinedDate = response.data.created_at;
+        if (!response.data.email_verified) {
+          await authStore.publicAxios({
+            method: "post",
+            url: "users/otp",
+            data: { user_id: user.id },
+          });
+
+          authStore.setEmail(response.data.email);
+          router.push({ name: "verify-email" });
+        } else authStore.unVerifiedEmail = false;
       }
     } catch (error) {
       authStore.isAuthenticated = false;

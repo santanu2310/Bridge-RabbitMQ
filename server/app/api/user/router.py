@@ -1,3 +1,4 @@
+from bson import ObjectId
 import jwt
 import logging
 from typing import Annotated
@@ -5,6 +6,7 @@ from datetime import timedelta, datetime, timezone
 from fastapi import APIRouter, Body, HTTPException, status, Depends, Query, Cookie
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
+from redis.asyncio import Redis
 
 from app.core.schemas import (
     UserRegistration,
@@ -21,7 +23,11 @@ from app.utils import (
 )
 from app.background_tasks.celery.tasks import process_profile_media
 
-from app.deps import get_user_from_refresh_token, get_user_from_access_token_http
+from app.deps import (
+    get_user_from_refresh_token,
+    get_user_from_access_token_http,
+    get_verified_user,
+)
 from app.core.db import get_async_database, AsyncDatabase, ReturnDocument
 from app.core.config import settings
 from app.core.redis import get_redis_conn, get_value, delete_key
@@ -32,9 +38,10 @@ from .services import (
     create_access_token,
     create_refresh_token,
     get_full_user,
+    email_verify_request,
 )
 
-from .schemas import EmailVerifyRequest
+from .schemas import EmailVerifyRequest, VerifyOtpRequest
 
 router = APIRouter()
 
@@ -49,6 +56,18 @@ async def user_register(
 ):
     created = await register_new_user(db=db, user=user, redis_client=redis_client)
     return JSONResponse(content=created, status_code=status.HTTP_201_CREATED)
+
+
+@router.post("/otp")
+async def request_otp(
+    payload: VerifyOtpRequest = Body(...),
+    db: AsyncDatabase = Depends(get_async_database),
+    redis_client: Redis = Depends(get_redis_conn),
+):
+    req_status = await email_verify_request(
+        user_id=ObjectId(payload.user_id), db=db, redis_client=redis_client
+    )
+    return JSONResponse(content=req_status, status_code=status.HTTP_200_OK)
 
 
 @router.post("/verify-email")
@@ -221,7 +240,7 @@ async def update_user_data(
 
 @router.get("/upload-url")
 async def get_presigned_post(
-    user: UserAuthOut = Depends(get_user_from_access_token_http),
+    user: UserAuthOut = Depends(get_verified_user),
 ):
     return create_presigned_upload_url()
 
@@ -229,7 +248,7 @@ async def get_presigned_post(
 @router.post("/add-profile-image")
 async def add_user_image(
     data: Annotated[UpdatableUserImages, Body()],
-    user: UserAuthOut = Depends(get_user_from_access_token_http),
+    user: UserAuthOut = Depends(get_verified_user),
 ):
     if data.profile_picture_id is None and data.banner_picture_id is None:
         raise HTTPException(
@@ -254,7 +273,7 @@ async def add_user_image(
 
 @router.get("/download-url")
 async def get_presigned_download(
-    user: UserAuthOut = Depends(get_user_from_access_token_http),
+    user: UserAuthOut = Depends(get_verified_user),
     key: str = Query(description="Key of the file"),
 ):
     return create_presigned_download_url(key)

@@ -25,6 +25,10 @@ async function verify() {
     });
 
     if (response.status === 200) {
+      authStore.unVerifiedEmail = false;
+
+      if (authStore.isAuthenticated == true) router.push({ name: "home" });
+
       router.push({ name: "login" });
     }
   } catch (error) {
