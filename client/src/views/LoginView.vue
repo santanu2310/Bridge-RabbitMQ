@@ -14,7 +14,10 @@ const passwordVisible = ref(false);
 const username = ref("");
 const password = ref("");
 
+const errorMsg = ref<string[]>([]);
+
 async function getToken() {
+  errorMsg.value = [];
   try {
     const response = await authStore.authAxios({
       method: "post",
@@ -31,7 +34,10 @@ async function getToken() {
       router.push({ name: "home" });
     }
   } catch (error) {
-    console.log(error);
+    const axiosError = error as {
+      response: { data: { detail: string } };
+    };
+    errorMsg.value.push(axiosError.response.data.detail);
   }
 }
 </script>
@@ -71,9 +77,20 @@ async function getToken() {
       class="login-f-wrapper xl:w-3/4 lg:w-4/6 w-11/12 h-auto lg:mr-10 my-10 py-6 sm:px-10 px-2 flex flex-col items-center justify-center rounded-2xl"
     >
       <div class="login-form max-w-80 w-full mb-20 flex flex-col items-center">
-        <div class="my-12 text-center">
+        <div class="my-10 text-center">
           <b class="text-3xl font-medium">Welcome Back</b>
           <p class="mt-1 text-base">Sign in to continue to Bridge.</p>
+          <div
+            class="w-full h-fit flex mt-3 justify-center"
+            v-if="errorMsg.length > 0"
+          >
+            <span
+              v-for="msg in errorMsg"
+              class="text-red-500 text-sm font-medium"
+              >{{ msg }}</span
+            >
+          </div>
+          <div class="h-5 mt-3" v-else></div>
         </div>
         <form class="w-full" @submit.prevent="getToken()">
           <div class="input-div">

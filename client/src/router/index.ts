@@ -1,14 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import HomeView from "../views/HomeView.vue";
 import { useAuthStore } from "@/stores/auth";
-import { createPinia } from "pinia";
-import { createApp } from "vue";
-import App from "../App.vue";
 
-// const pinia = createPinia();
-// const app = createApp(App);
-// app.use(pinia);
-//
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
