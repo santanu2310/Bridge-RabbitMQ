@@ -4,6 +4,7 @@ import { CallStatus } from "@/types/Call";
 import { useFriendStore } from "@/stores/friend";
 import { useCallStore } from "@/stores/call";
 import { formatDateDifference } from "@/utils/DateUtils";
+import Avatar from "./ui/Avatar.vue";
 import IconCall from "./icons/IconCall.vue";
 import IconArrowFull from "./icons/IconArrowFull.vue";
 import IconVideoCall from "./icons/IconVideoCall.vue";
@@ -34,11 +35,10 @@ function getTime(dateTime: string) {
 <template>
   <def class="w-full h-14 p-1 block">
     <div class="w-full h-full flex items-center">
-      <div class="h-[80%] aspect-square mx-2 rounded-full overflow-hidden">
-        <img
-          class="w-full h-full object-cover"
-          :src="friend.profilePicUrl ?? undefined"
-          alt=""
+      <div class="h-[80%] aspect-square mx-2">
+        <Avatar
+          :user-name="friend.fullName"
+          :profile-pic-url="friend.profilePicUrl ?? undefined"
         />
       </div>
       <div
