@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import IconCall from "@/components/icons/IconCall.vue";
 import IconMic from "@/components/icons/IconMic.vue";
 import IconMicOff from "@/components/icons/IconMicOff.vue";
 import IconSpeaker from "@/components/icons/IconSpeaker.vue";
@@ -58,7 +57,7 @@ onMounted(() => {
       elapsedSeconds.value = Math.floor(
         (Date.now() -
           new Date(callStore.currentCallState.startTime).getTime()) /
-          1000
+          1000,
       );
     }, 1000);
   });
@@ -76,7 +75,7 @@ onMounted(() => {
           .catch((err) => console.error("Audio play error:", err));
       }
     },
-    { immediate: true }
+    { immediate: true },
   );
 });
 
@@ -131,7 +130,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
     <div
-      class="w-full h-16 flex items-center justify-around"
+      class="w-full h-16 flex items-center justify-around text-2xl"
       v-if="callStore.currentCallState?.callStatus == 'incoming'"
     >
       <button
@@ -139,14 +138,14 @@ onBeforeUnmount(() => {
         @click="callStore.acceptCall()"
         @touchend="callStore.acceptCall()"
       >
-        <IconCall :size="40" />
+        <i class="ri-phone-fill"></i>
       </button>
       <button
         class="h-3/4 w-auto aspect-square rounded-full flex items-center justify-center cursor-pointer duration-200 bg-red-500 text-color-white"
         @click="callStore.hangup(callStore.currentCallState.callId!)"
         @touchend="callStore.hangup(callStore.currentCallState.callId!)"
       >
-        <IconCall :size="40" :rotate="135" />
+        <i class="ri-phone-fill rotate-[135deg]"></i>
       </button>
     </div>
     <div class="w-full h-16 flex items-center justify-around" v-else>
@@ -167,7 +166,7 @@ onBeforeUnmount(() => {
         @click="callStore.hangup(callStore.currentCallState?.callId!)"
         @touchend="callStore.hangup(callStore.currentCallState?.callId!)"
       >
-        <IconCall :size="40" :rotate="135" />
+        <i class="ri-phone-fill rotate-[135deg]"></i>
       </button>
     </div>
   </div>

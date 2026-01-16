@@ -14,7 +14,7 @@ const props = defineProps<{
       class="w-2 h-auto aspect-square overflow-hidden rounded-full bg-red-500 absolute top-[22%] right-[22%] block"
     ></span>
     <div
-      class="w-auto lg:w-full h-full lg:h-auto p-1 aspect-square flex items-center justify-center"
+      class="w-auto lg:w-full h-full lg:h-auto p-1 aspect-square flex items-center justify-center text-lg"
     >
       <slot></slot>
     </div>

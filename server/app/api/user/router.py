@@ -39,9 +39,16 @@ from .services import (
     create_refresh_token,
     get_full_user,
     email_verify_request,
+    send_password_reset_otp,
+    reset_password as _reset_password,
 )
 
-from .schemas import EmailVerifyRequest, VerifyOtpRequest
+from .schemas import (
+    EmailVerifyRequest,
+    PasswordResetRequest,
+    VerifyOtpRequest,
+    PassResetOtpRequest,
+)
 
 router = APIRouter()
 
@@ -103,6 +110,26 @@ async def verify_email(
     await delete_key(redis_conn=redis_client, key=verify_request.email)
 
     return {"message": "successfully verified email address"}
+
+
+@router.post("/password/otp")
+async def password_reset_opt_request(
+    req_data: PassResetOtpRequest,
+    db: AsyncDatabase = Depends(get_async_database),
+    redis_client=Depends(get_redis_conn),
+):
+    return await send_password_reset_otp(
+        email=req_data.email, redis_client=redis_client, db=db
+    )
+
+
+@router.post("/password/reset")
+async def reset_password(
+    req_data: PasswordResetRequest,
+    db: AsyncDatabase = Depends(get_async_database),
+    redis_client=Depends(get_redis_conn),
+):
+    return await _reset_password(req_data=req_data, db=db, redis_client=redis_client)
 
 
 @router.post("/get-token")

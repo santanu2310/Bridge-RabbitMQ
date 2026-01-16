@@ -30,9 +30,8 @@ async def search_user(
         cursor = db.user_profile.aggregate(
             search_user_by_name(name=query, user_id=current_user_id)
         )
-        users = await cursor.to_list(length=None)
-        logger.info(f"{users=}")
 
+        users = await cursor.to_list(length=None)
         processed_user = []
 
         for user in users:
@@ -45,7 +44,7 @@ async def search_user(
                     user_brief.profile_picture
                 )
                 processed_user.append(user_brief)
-        logger.info(f"{processed_user=}")
+
         return processed_user
 
     except Exception as e:

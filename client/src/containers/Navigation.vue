@@ -3,10 +3,8 @@ import { useUserStore } from "@/stores/user";
 import { useFriendStore } from "@/stores/friend";
 
 import IconLogo from "@/components/icons/IconLogo.vue";
-import IconMessages from "@/components/icons/IconMessages.vue";
 import IconGroupes from "@/components/icons/IconGroupes.vue";
 import IconFriends from "@/components/icons/IconFriends.vue";
-import IconCall from "@/components/icons/IconCall.vue";
 import NavButton from "@/components/NavButton.vue";
 import { getUserColor } from "@/utils/ProfileUtils";
 import { getInitials } from "@/utils/StringUtils";
@@ -32,7 +30,7 @@ const friendStore = useFriendStore();
         :text="'Conversations'"
         @click="$emit('switchContainer', 'chats')"
       >
-        <IconMessages :size="35" />
+        <i class="ri-question-answer-fill"></i>
       </NavButton>
 
       <NavButton :text="'Groups'"><IconGroupes :size="35" /></NavButton>
@@ -44,7 +42,7 @@ const friendStore = useFriendStore();
         <IconFriends :size="35" />
       </NavButton>
       <NavButton :text="'Calls'" @click="$emit('switchContainer', 'calllogs')">
-        <IconCall :size="35" />
+        <i class="ri-phone-fill"></i>
       </NavButton>
     </div>
     <div

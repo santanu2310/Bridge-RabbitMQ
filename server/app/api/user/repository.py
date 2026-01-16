@@ -4,7 +4,7 @@ from bson import ObjectId
 from pymongo.errors import PyMongoError
 from app.core.db import AsyncDatabase
 from app.core.schemas import UserProfile, UserAuth, UserRegistration, UserAuthOut
-from app.core.exceptions import InternalServerError
+from app.core.exceptions import InternalServerError, NotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +15,14 @@ async def find_user_by_username_email(
     user_auth = await db.user_auth.find_one(
         {"$or": [{"username": username}, {"email": email}]}
     )
+    if not user_auth:
+        return None
+
+    return UserAuthOut(**user_auth)
+
+
+async def find_user_by_email(db: AsyncDatabase, email: str) -> Optional[UserAuthOut]:
+    user_auth = await db.user_auth.find_one({"email": email})
     if not user_auth:
         return None
 
@@ -38,6 +46,17 @@ async def create_user(db: AsyncDatabase, user: UserRegistration) -> ObjectId:
             await db.user_auth.delete_one({"_id": created.inserted_id})
         logger.critical(f"Failed to query db for user returning error: {e}")
         raise InternalServerError()
+
+
+async def change_password(db: AsyncDatabase, email: str, password: str) -> ObjectId:
+    auth = await db.user_auth.find_one_and_update(
+        {"email": email}, {"$set": {"password": password}}
+    )
+
+    if not auth:
+        raise NotFoundError(detail="user with the given email do not exist")
+
+    return auth.get("_id")
 
 
 async def drop_user(db: AsyncDatabase, user_id: ObjectId) -> bool:

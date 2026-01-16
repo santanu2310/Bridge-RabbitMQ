@@ -47,7 +47,7 @@ export const useMessageStore = defineStore("message", () => {
 
     const conversation: Conversation = (await indexedDbService.getRecord(
       "conversation",
-      message.conversationId
+      message.conversationId,
     )) as Conversation;
 
     if (!conversation) {
@@ -124,7 +124,7 @@ export const useMessageStore = defineStore("message", () => {
   function deleteMessageFromList(
     convId: string,
     targetedId: string,
-    candidateIndex = -1
+    candidateIndex = -1,
   ) {
     // Set candidateIndex to the last element on the first call
     if (candidateIndex === -1) {
@@ -146,7 +146,7 @@ export const useMessageStore = defineStore("message", () => {
 
   async function sendMessageWithFile(
     message: Message,
-    file: File | null = null
+    file: File | null = null,
   ) {
     if (!message.conversationId && !message.receiverId) {
       console.error("either receiverId or conversationId is required");
@@ -158,7 +158,7 @@ export const useMessageStore = defineStore("message", () => {
       if (!file) {
         const fileRequest = (await indexedDbService.getRecord(
           "tempFile",
-          message.id
+          message.id,
         )) as TempFile | null;
 
         if (!fileRequest) {
@@ -210,7 +210,8 @@ export const useMessageStore = defineStore("message", () => {
           data: response.data.fields,
           onUploadProgress(progressEvent) {
             const percentCompleted = Math.round(
-              (progressEvent.loaded * 100) / (progressEvent.total ?? file!.size)
+              (progressEvent.loaded * 100) /
+                (progressEvent.total ?? file!.size),
             );
             uploadEmitter.emit("uploadProgress", message.id, percentCompleted);
             console.log(progressEvent.loaded);

@@ -41,6 +41,17 @@ const router = createRouter({
       },
     },
     {
+      path: "/password-recovery",
+      name: "password-recovery",
+      component: () => import("../views/PassResetView.vue"),
+      beforeEnter: () => {
+        const authStore = useAuthStore();
+        if (authStore.isAuthenticated == true) {
+          return { name: "home" };
+        }
+      },
+    },
+    {
       path: "/",
       name: "home",
       component: HomeView,

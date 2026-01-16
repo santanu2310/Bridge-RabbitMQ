@@ -193,6 +193,8 @@ input {
 
 .eye {
   background: var(--color-background);
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
 }
 
 .button {

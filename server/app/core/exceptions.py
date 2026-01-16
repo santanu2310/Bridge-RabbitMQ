@@ -10,6 +10,20 @@ class AppException(Exception):
         super().__init__(detail)
 
 
+class BadRequestError(AppException):
+    """Raised when data is not found in the database."""
+
+    def __init__(self, detail: str = "Bad request."):
+        super().__init__(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
+
+
+class NotFoundError(AppException):
+    """Raised when data is not found in the database."""
+
+    def __init__(self, detail: str = "Not found"):
+        super().__init__(status_code=status.HTTP_404_NOT_FOUND, detail=detail)
+
+
 class UserAlreadyExistsError(AppException):
     """Exception raised when a user tries to register with an email or username that already exists."""
 

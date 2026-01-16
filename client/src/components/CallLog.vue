@@ -5,7 +5,6 @@ import { useFriendStore } from "@/stores/friend";
 import { useCallStore } from "@/stores/call";
 import { formatDateDifference } from "@/utils/DateUtils";
 import Avatar from "./ui/Avatar.vue";
-import IconCall from "./icons/IconCall.vue";
 import IconArrowFull from "./icons/IconArrowFull.vue";
 import IconVideoCall from "./icons/IconVideoCall.vue";
 
@@ -70,7 +69,7 @@ function getTime(dateTime: string) {
           >
         </div>
       </div>
-      <div class="h-full w-auto aspect-square p-2">
+      <div class="h-full w-auto aspect-square p-2 text-lg">
         <button
           class="w-auto h-ful aspect-square"
           @click="
@@ -80,7 +79,7 @@ function getTime(dateTime: string) {
             )
           "
         >
-          <IconCall v-if="callRecord.callType == 'audio'" />
+          <i class="ri-phone-fill" v-if="callRecord.callType == 'audio'"></i>
           <IconVideoCall v-else />
         </button>
       </div>

@@ -2,6 +2,7 @@ import { indexedDbService } from "@/services/indexDbServices";
 import type { Message } from "@/types/Message";
 import type { Conversation } from "@/types/Conversation";
 import { useUserStore } from "../user";
+import { useAuthStore } from "../auth";
 import { useSyncStore } from "../background_sync";
 import { addMessageInState, updateMessageInState } from "@/utils/MessageUtils";
 import {
@@ -28,31 +29,58 @@ async function saveMessageToDB(message: Message) {
 
 async function handleNewConversation(message: Message) {
   const userStore = useUserStore();
-  const newConversation: Conversation = {
-    id: message.conversationId,
-    participant: message.senderId,
-    startDate: null,
-    lastMessageDate: message.sendingTime,
-  };
+  const authStore = useAuthStore();
 
-  userStore.conversations[message.conversationId as string] = {
-    isActive: true,
-    messages: [message],
-    lastMessageDate: message.sendingTime as string,
-    participant: message.senderId as string,
-  };
+  const response = await authStore.authAxios({
+    method: "get",
+    url: "/conversations/get-conversation",
+    params: {
+      conversation_id: message.conversationId,
+    },
+  });
 
-  userStore.currentConversation!.convId = message.conversationId as string;
+  if (response.status == 200) {
+    const convResponse: Conversation = {
+      id: response.data.id,
+      participant: response.data.participants.find(
+        (id: string) => id != userStore.user.id,
+      ) as string, //It shoud be participants
+      startDate: response.data.start_date,
+      lastMessageDate: response.data.last_message_date,
+    };
 
-  console.log("conversations : ", userStore.conversations);
+    //Add the conversation to indesedDb and to local variable
+    await indexedDbService.addRecord("conversation", convResponse);
+    if (userStore.currentConversation?.receiverId == convResponse.participant) {
+      userStore.currentConversation!.convId = convResponse.id;
+    }
+    userStore.conversations[convResponse.id as string] = {
+      isActive: true,
+      messages: [],
+      lastMessageDate: convResponse.lastMessageDate as string,
+      participant: convResponse.participant as string,
+    };
+  }
+  //
+  // const newConversation: Conversation = {
+  //   id: message.conversationId,
+  //   participant: message.senderId,
+  //   startDate: null,
+  //   lastMessageDate: message.sendingTime,
+  // };
 
-  await indexedDbService.addRecord("conversation", newConversation);
+  //
+  // userStore.currentConversation!.convId = message.conversationId as string;
+  //
+  // console.log("conversations : ", userStore.conversations);
+  //
+  // await indexedDbService.addRecord("conversation", newConversation);
 }
 
 async function updateConversation(
   conversation: Conversation,
   message: Message,
-  userStore: any
+  userStore: any,
 ) {
   userStore.conversations[message.conversationId!].lastMessageDate =
     message.sendingTime as string;

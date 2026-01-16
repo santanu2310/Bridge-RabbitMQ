@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import IconCall from "@/components/icons/IconCall.vue";
 import IconMic from "@/components/icons/IconMic.vue";
 import IconMicOff from "@/components/icons/IconMicOff.vue";
 import IconVideoCall from "@/components/icons/IconVideoCall.vue";
@@ -98,7 +97,7 @@ function formatTime(second: number): string {
 async function attachStreamToVideo(
   stream: MediaStream | null,
   videoElement: HTMLVideoElement | null,
-  isLocal = false
+  isLocal = false,
 ) {
   if (!stream || !videoElement) return;
 
@@ -149,13 +148,13 @@ function setupStreamWatchers() {
   // Watch for changes in remote stream
   const remoteWatcher = watch(
     () => callStore.remoteStream,
-    (stream) => attachStreamToVideo(stream, remoteVideoElement.value, false)
+    (stream) => attachStreamToVideo(stream, remoteVideoElement.value, false),
   );
 
   // Watch for changes in local stream
   const localWatcher = watch(
     () => callStore.localStream,
-    (stream) => attachStreamToVideo(stream, localVideoElement.value, true)
+    (stream) => attachStreamToVideo(stream, localVideoElement.value, true),
   );
 
   return [remoteWatcher, localWatcher];
@@ -180,11 +179,11 @@ function setupCallStateWatcher() {
       callTimer.value = setInterval(() => {
         if (!callState.startTime) return;
         elapsedSeconds.value = Math.floor(
-          (Date.now() - new Date(callState.startTime).getTime()) / 1000
+          (Date.now() - new Date(callState.startTime).getTime()) / 1000,
         );
       }, 1000);
     },
-    { immediate: true, deep: true }
+    { immediate: true, deep: true },
   );
 }
 
@@ -287,7 +286,7 @@ onBeforeUnmount(() => {
         @click="callStore.acceptCall()"
         @touchend="callStore.acceptCall()"
       >
-        <IconCall :size="40" />
+        <i class="ri-phone-fill"></i>
       </button>
       <button
         type="button"
@@ -295,7 +294,7 @@ onBeforeUnmount(() => {
         @click="callStore.hangup(callStore.currentCallState.callId!)"
         @touchend="callStore.hangup(callStore.currentCallState.callId!)"
       >
-        <IconCall :size="40" :rotate="135" />
+        <i class="ri-phone-fill rotate-[135deg]"></i>
       </button>
     </div>
     <div
@@ -323,7 +322,7 @@ onBeforeUnmount(() => {
         @click="callStore.hangup(callStore.currentCallState?.callId!)"
         @touchend="callStore.hangup(callStore.currentCallState?.callId!)"
       >
-        <IconCall :size="40" :rotate="135" />
+        <i class="ri-phone-fill rotate-[135deg]"></i>
       </button>
     </div>
   </div>

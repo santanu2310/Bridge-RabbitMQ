@@ -20,8 +20,22 @@ from app.core.schemas import (
 )
 from app.core.config import settings
 from app.core.redis import set_key_value
-from app.core.exceptions import UserAlreadyExistsError, InternalServerError
-from .repository import find_user_by_username_email, create_user, drop_user
+from app.core.exceptions import (
+    UserAlreadyExistsError,
+    InternalServerError,
+    NotFoundError,
+    BadRequestError,
+)
+
+from app.core.redis import get_value, delete_key
+from .repository import (
+    find_user_by_username_email,
+    create_user,
+    drop_user,
+    find_user_by_email,
+    change_password,
+)
+from .schemas import PasswordResetRequest
 
 
 logger = logging.getLogger(__name__)
@@ -66,6 +80,45 @@ async def email_verify_request(
     return {"status": "OTP send successfulle"}
 
 
+async def send_password_reset_otp(
+    email: str, redis_client: Redis, db: AsyncDatabase
+) -> object:
+    user = await find_user_by_email(db=db, email=email)
+
+    if not user:
+        raise NotFoundError(detail=f"No user with {email}")
+
+    otp = await create_and_store_otp(redis_conn=redis_client, email=email)
+    await asyncio.to_thread(send_email.delay, email=email, otp=otp)
+
+    return {"email": email, "status": "User created successfully"}
+
+
+async def reset_password(
+    req_data: PasswordResetRequest, db: AsyncDatabase, redis_client: Redis
+) -> object:
+    stored_otp = await get_value(redis_conn=redis_client, key=req_data.email)
+
+    if not stored_otp:
+        raise BadRequestError(
+            detail="OTP expired or not found. Please request a new one.",
+        )
+    if stored_otp != req_data.otp:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Incorrect code",
+        )
+    hassed_password = await asyncio.to_thread(hash_password, req_data.password)
+
+    await change_password(db=db, email=req_data.email, password=hassed_password)
+    await delete_key(redis_conn=redis_client, key=req_data.email)
+
+    return {
+        "status": "success",
+        "message": "Password has been reset successfully. Please log in with your new credentials.",
+    }
+
+
 async def get_full_user(db: AsyncDatabase, user_id: ObjectId) -> UserOut:
     pipeline: List[Dict[str, Any]] = [
         # Match the user_auth document by its _id (or another unique identifier)
@@ -89,7 +142,7 @@ async def get_full_user(db: AsyncDatabase, user_id: ObjectId) -> UserOut:
     user_response = await cursor.to_list(length=1)
 
     if not user_response:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        raise NotFoundError(detail=f"No user found for the given ID: {user_id}")
     return UserOut.model_validate(user_response[0])
 
 
