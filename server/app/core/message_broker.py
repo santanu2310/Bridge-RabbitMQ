@@ -3,6 +3,7 @@ import json
 import logging
 from functools import wraps
 from typing import Awaitable, Callable, Dict
+from pydantic import BaseModel
 
 from aio_pika import Message, connect_robust
 from aio_pika.abc import (
@@ -63,18 +64,19 @@ async def create_rabbit_exchanges(connection: AbstractRobustConnection):
 
 
 async def publish_message(
-    connection: AbstractRobustConnection, exchange_name: str, topic: str, data: Dict
+    connection: AbstractRobustConnection,
+    exchange_name: str,
+    topic: str,
+    data: BaseModel,
 ):
     channel: AbstractChannel = await connection.channel()
     try:
         exchange: AbstractExchange = await channel.get_exchange(name=exchange_name)
 
         await exchange.publish(
-            Message(body=json.dumps(data).encode("utf-8")),
+            Message(body=data.model_dump_json().encode("utf-8")),
             routing_key=topic,
         )
-
-        logger.info(f"Message published : {data}")
 
     except Exception as e:
         logger.error(f"Failed to publish message: {e}")

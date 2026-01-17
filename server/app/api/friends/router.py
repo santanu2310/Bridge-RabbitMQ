@@ -13,6 +13,8 @@ from app.core.schemas import (
     Friends_Status,
     FriendRequestOut,
     AddFriendMessage,
+    FriendRequestMessage,
+    SyncMessageType,
 )
 
 from app.core.db import AsyncDatabase, get_async_database
@@ -98,8 +100,26 @@ async def make_friend_request(
     )
 
     # Inserting the request into the collection
-    await db.friend_request.insert_one(
+    result = await db.friend_request.insert_one(
         request.model_dump(by_alias=True, exclude={"id"})
+    )
+
+    full_user = await get_full_user(db=db, user_id=request.sender_id)
+    user_brief = UserBrief.model_validate(full_user.model_dump())
+
+    message = FriendRequestMessage(
+        type=SyncMessageType.friend_request,
+        id=str(result.inserted_id),
+        message=request.message,
+        user=user_brief,
+        status=Friends_Status.pending,
+        created_time=request.created_at,
+    )
+
+    # Send the status update to the message sender
+    await send_message(
+        user_ids=[request.receiver_id],
+        message_data=message,
     )
 
     return

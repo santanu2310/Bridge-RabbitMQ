@@ -285,6 +285,11 @@ class FriendUpdateMessage(BaseModel):
     banner_picture: Optional[str] = None
 
 
+class BrodcastMessage(BaseModel):
+    ids: list[PyObjectId]
+    data: FriendUpdateMessage
+
+
 class FriendRequestMessage(BaseModel):
     type: Literal[SyncMessageType.friend_request] = SyncMessageType.friend_request
     id: str

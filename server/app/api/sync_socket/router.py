@@ -38,6 +38,7 @@ from .services import (
     get_call_record,
     list_call_record,
 )
+from .schemas import OnlineStatus
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -92,16 +93,21 @@ async def websocket_endpoint(
                     user_id=user.id, message=SyncPacket(type=PacketType.pong)
                 )
             elif packet.type == PacketType.message and packet.data:
-                await handle_recieved_message(db, user_id=user.id, message=packet.data)
+                await handle_recieved_message(
+                    db, user_id=user.id, message=packet.data, queue=queue_connection
+                )
 
     except WebSocketDisconnect as e:
-        logger.error(e)
+        logger.error(f"User disconnected: {e}")
         await connections.disconnect(user.id, queue_connection)
     return
 
 
 async def handle_recieved_message(
-    db: AsyncDatabase, user_id: ObjectId, message: SyncSocketMessage
+    db: AsyncDatabase,
+    user_id: ObjectId,
+    message: SyncSocketMessage,
+    queue: AbstractRobustConnection,
 ):
     if message.type == SyncMessageType.message_status:
         try:
@@ -137,6 +143,14 @@ async def handle_recieved_message(
 
             if updates:
                 await db.message.bulk_write(updates)
+
+                # Publish the updated messages to the queue for further processing
+                await publish_message(
+                    connection=queue,
+                    exchange_name=settings.EXCHANGES.sync_message.value,
+                    topic=settings.TOPICS.message_status_update.value,
+                    data=msg,
+                )
         except Exception as e:
             logger.critical(e)
 
@@ -225,7 +239,7 @@ async def notify_online_status(
     user_id: ObjectId,
     is_online: Literal["online", "offline"],
 ):
-    data = {"user_id": str(user_id), "status": is_online}
+    data = OnlineStatus(user_id=str(user_id), status=is_online)
     await publish_message(
         connection=connection,
         exchange_name=settings.EXCHANGES.sync_message.value,
