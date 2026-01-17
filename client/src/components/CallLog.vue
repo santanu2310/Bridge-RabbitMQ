@@ -4,7 +4,7 @@ import { CallStatus } from "@/types/Call";
 import { useFriendStore } from "@/stores/friend";
 import { useCallStore } from "@/stores/call";
 import { formatDateDifference } from "@/utils/DateUtils";
-import IconCall from "./icons/IconCall.vue";
+import Avatar from "./ui/Avatar.vue";
 import IconArrowFull from "./icons/IconArrowFull.vue";
 import IconVideoCall from "./icons/IconVideoCall.vue";
 
@@ -34,11 +34,10 @@ function getTime(dateTime: string) {
 <template>
   <def class="w-full h-14 p-1 block">
     <div class="w-full h-full flex items-center">
-      <div class="h-[80%] aspect-square mx-2 rounded-full overflow-hidden">
-        <img
-          class="w-full h-full object-cover"
-          :src="friend.profilePicUrl ?? undefined"
-          alt=""
+      <div class="h-[80%] aspect-square mx-2">
+        <Avatar
+          :user-name="friend.fullName"
+          :profile-pic-url="friend.profilePicUrl ?? undefined"
         />
       </div>
       <div
@@ -70,7 +69,7 @@ function getTime(dateTime: string) {
           >
         </div>
       </div>
-      <div class="h-full w-auto aspect-square p-2">
+      <div class="h-full w-auto aspect-square p-2 text-lg">
         <button
           class="w-auto h-ful aspect-square"
           @click="
@@ -80,7 +79,7 @@ function getTime(dateTime: string) {
             )
           "
         >
-          <IconCall v-if="callRecord.callType == 'audio'" />
+          <i class="ri-phone-fill" v-if="callRecord.callType == 'audio'"></i>
           <IconVideoCall v-else />
         </button>
       </div>

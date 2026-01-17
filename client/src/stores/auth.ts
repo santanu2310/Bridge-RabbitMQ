@@ -7,17 +7,23 @@ import { indexedDbService } from "@/services/indexDbServices";
 export const useAuthStore = defineStore("authentication", () => {
   const isAuthenticated = ref(true);
   const isLoading = ref(true);
+  const unVerifiedEmail = ref(true);
   const isLoggingOut = ref<boolean>(false);
   const router = useRouter();
-  const baseUrl = "http://localhost:8000/";
+  const baseUrl = import.meta.env.VITE_API_BASE;
+  const email = ref<string | null>(null);
+
+  function setEmail(value: string) {
+    email.value = value;
+  }
 
   const authAxios = axios.create({
-    baseURL: "http://localhost:8000/",
+    baseURL: baseUrl,
     withCredentials: true,
   });
 
   const publicAxios = axios.create({
-    baseURL: "http://localhost:8000/",
+    baseURL: baseUrl,
   });
 
   // Axios interceptor to catch unauthentication error and retry after retriving the auth tokens
@@ -85,10 +91,14 @@ export const useAuthStore = defineStore("authentication", () => {
 
   return {
     isAuthenticated,
+    unVerifiedEmail,
+    baseUrl,
     isLoading,
     isLoggingOut,
     authAxios,
     publicAxios,
     logOut,
+    email,
+    setEmail,
   };
 });

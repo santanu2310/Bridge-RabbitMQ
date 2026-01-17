@@ -11,3 +11,5 @@
 **/tfplan.binary
 **/plan.json
 **/.terraform.lock.hcl
+
+.secrets

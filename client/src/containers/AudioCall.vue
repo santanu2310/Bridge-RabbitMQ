@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import IconCall from "@/components/icons/IconCall.vue";
 import IconMic from "@/components/icons/IconMic.vue";
 import IconMicOff from "@/components/icons/IconMicOff.vue";
 import IconSpeaker from "@/components/icons/IconSpeaker.vue";
@@ -45,8 +44,6 @@ onMounted(() => {
       : callStore.currentCallState.callerId;
 
   userData.value = friendStore.friends[userId];
-
-  console.log(userData);
 
   watch(callStore.currentCallState, () => {
     if (
@@ -133,20 +130,22 @@ onBeforeUnmount(() => {
       </div>
     </div>
     <div
-      class="w-full h-16 flex items-center justify-around"
+      class="w-full h-16 flex items-center justify-around text-2xl"
       v-if="callStore.currentCallState?.callStatus == 'incoming'"
     >
       <button
         class="h-3/4 w-auto aspect-square rounded-full flex items-center justify-center cursor-pointer duration-200 bg-green-500 text-color-white"
         @click="callStore.acceptCall()"
+        @touchend="callStore.acceptCall()"
       >
-        <IconCall :size="40" />
+        <i class="ri-phone-fill"></i>
       </button>
       <button
         class="h-3/4 w-auto aspect-square rounded-full flex items-center justify-center cursor-pointer duration-200 bg-red-500 text-color-white"
         @click="callStore.hangup(callStore.currentCallState.callId!)"
+        @touchend="callStore.hangup(callStore.currentCallState.callId!)"
       >
-        <IconCall :size="40" :rotate="135" />
+        <i class="ri-phone-fill rotate-[135deg]"></i>
       </button>
     </div>
     <div class="w-full h-16 flex items-center justify-around" v-else>
@@ -165,8 +164,9 @@ onBeforeUnmount(() => {
       <button
         class="h-3/4 w-auto aspect-square rounded-full flex items-center justify-center cursor-pointer duration-200 bg-red-500 text-color-white"
         @click="callStore.hangup(callStore.currentCallState?.callId!)"
+        @touchend="callStore.hangup(callStore.currentCallState?.callId!)"
       >
-        <IconCall :size="40" :rotate="135" />
+        <i class="ri-phone-fill rotate-[135deg]"></i>
       </button>
     </div>
   </div>

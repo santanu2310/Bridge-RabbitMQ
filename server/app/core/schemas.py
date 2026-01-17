@@ -95,7 +95,7 @@ class UserAuth(BaseModel):
     username: str
     email: EmailStr
     password: str
-    hashing_salt: str
+    email_verified: bool = False
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -103,6 +103,7 @@ class UserAuthOut(BaseModel):
     id: PyObjectId = Field(validation_alias="_id")
     username: str
     email: EmailStr
+    email_verified: bool
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -125,6 +126,15 @@ class UserRegistration(BaseModel):
     email: EmailStr
     password: str
 
+    @model_validator(mode="before")
+    @classmethod
+    def username_to_lower(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            username = data.get("username")
+            if isinstance(username, str):
+                data["username"] = username.lower()
+        return data
+
 
 class UserBrief(BaseModel):
     id: PyObjectId
@@ -139,6 +149,7 @@ class UserOut(BaseModel):
     username: str
     full_name: str | None = None
     email: EmailStr
+    email_verified: bool
     bio: str | None = None
     profile_picture: str | None = None
     banner_picture: Optional[str] = None

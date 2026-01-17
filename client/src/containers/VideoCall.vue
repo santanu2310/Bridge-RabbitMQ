@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import IconCall from "@/components/icons/IconCall.vue";
 import IconMic from "@/components/icons/IconMic.vue";
 import IconMicOff from "@/components/icons/IconMicOff.vue";
 import IconVideoCall from "@/components/icons/IconVideoCall.vue";
@@ -31,7 +30,7 @@ const callTimer = ref<number | null>(null);
 
 const hideTimeout = ref<number | null>(4);
 const countdownInterval = ref<number | null>(null);
-let isTouch = "ontouchstart" in window;
+let isTouch = "ontouchend" in window;
 
 // Cleanup functions
 let watchers: (() => void)[] = [];
@@ -98,7 +97,7 @@ function formatTime(second: number): string {
 async function attachStreamToVideo(
   stream: MediaStream | null,
   videoElement: HTMLVideoElement | null,
-  isLocal = false
+  isLocal = false,
 ) {
   if (!stream || !videoElement) return;
 
@@ -121,12 +120,12 @@ function setupEventListeners() {
       e.preventDefault();
       showControls();
     };
-    element.addEventListener("touchstart", touchHandler);
+    element.addEventListener("touchend", touchHandler);
     element.addEventListener("touchmove", touchHandler);
 
     // Cleanup function to remove touch listeners
     return () => {
-      element.removeEventListener("touchstart", touchHandler);
+      element.removeEventListener("touchend", touchHandler);
       element.removeEventListener("touchmove", touchHandler);
     };
   } else {
@@ -149,13 +148,13 @@ function setupStreamWatchers() {
   // Watch for changes in remote stream
   const remoteWatcher = watch(
     () => callStore.remoteStream,
-    (stream) => attachStreamToVideo(stream, remoteVideoElement.value, false)
+    (stream) => attachStreamToVideo(stream, remoteVideoElement.value, false),
   );
 
   // Watch for changes in local stream
   const localWatcher = watch(
     () => callStore.localStream,
-    (stream) => attachStreamToVideo(stream, localVideoElement.value, true)
+    (stream) => attachStreamToVideo(stream, localVideoElement.value, true),
   );
 
   return [remoteWatcher, localWatcher];
@@ -180,11 +179,11 @@ function setupCallStateWatcher() {
       callTimer.value = setInterval(() => {
         if (!callState.startTime) return;
         elapsedSeconds.value = Math.floor(
-          (Date.now() - new Date(callState.startTime).getTime()) / 1000
+          (Date.now() - new Date(callState.startTime).getTime()) / 1000,
         );
       }, 1000);
     },
-    { immediate: true, deep: true }
+    { immediate: true, deep: true },
   );
 }
 
@@ -282,16 +281,20 @@ onBeforeUnmount(() => {
       v-if="callStore.currentCallState?.callStatus == 'incoming'"
     >
       <button
+        type="button"
         class="h-3/4 w-auto aspect-square rounded-full flex items-center justify-center cursor-pointer duration-200 bg-green-500 text-color-white"
         @click="callStore.acceptCall()"
+        @touchend="callStore.acceptCall()"
       >
-        <IconCall :size="40" />
+        <i class="ri-phone-fill"></i>
       </button>
       <button
+        type="button"
         class="h-3/4 w-auto aspect-square rounded-full flex items-center justify-center cursor-pointer duration-200 bg-red-500 text-color-white"
         @click="callStore.hangup(callStore.currentCallState.callId!)"
+        @touchend="callStore.hangup(callStore.currentCallState.callId!)"
       >
-        <IconCall :size="40" :rotate="135" />
+        <i class="ri-phone-fill rotate-[135deg]"></i>
       </button>
     </div>
     <div
@@ -301,6 +304,7 @@ onBeforeUnmount(() => {
       <button
         class="h-3/4 w-auto aspect-square rounded-full flex items-center justify-center cursor-pointer duration-200 hover:bg-color-background-mute"
         @click="video = callStore.alterVideoStream()"
+        @touchend="video = callStore.alterVideoStream()"
       >
         <IconVideoCall :size="40" v-if="video" />
         <IconVideoOff :size="40" v-else />
@@ -308,6 +312,7 @@ onBeforeUnmount(() => {
       <button
         class="h-3/4 w-auto aspect-square rounded-full flex items-center justify-center cursor-pointer duration-200 hover:bg-color-background-mute"
         @click="unMute = callStore.alterAudioStream()"
+        @touchend="unMute = callStore.alterAudioStream()"
       >
         <IconMic v-if="unMute" :size="40" />
         <IconMicOff v-else :size="40" />
@@ -315,8 +320,9 @@ onBeforeUnmount(() => {
       <button
         class="h-3/4 w-auto aspect-square rounded-full flex items-center justify-center cursor-pointer duration-200 bg-red-500 text-color-white"
         @click="callStore.hangup(callStore.currentCallState?.callId!)"
+        @touchend="callStore.hangup(callStore.currentCallState?.callId!)"
       >
-        <IconCall :size="40" :rotate="135" />
+        <i class="ri-phone-fill rotate-[135deg]"></i>
       </button>
     </div>
   </div>

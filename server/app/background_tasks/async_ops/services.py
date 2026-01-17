@@ -25,7 +25,6 @@ async def distribute_online_status_update(
     user_id = data["user_id"]
     user_list: List[ObjectId] = []
 
-    logger.info(f"{data=}")
     # Retrive the conversations with the user
     async for document in db.conversation.find(
         {"participants": {"$all": [ObjectId(user_id)]}}

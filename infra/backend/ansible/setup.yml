@@ -1,0 +1,181 @@
+- name: Update and Upgrade ubuntu
+  hosts: all
+  become: true
+  tasks:
+    - name: Install common required packages and update cache
+      apt:
+        name:
+          - ca-certificates
+          - curl
+          - snapd
+        state: present
+        update_cache: true
+        cache_valid_time: 3600 # Only update if older than 1 hour
+
+    - name: Upgrade all packages
+      apt:
+        upgrade: dist
+
+- name: Install Nginx from official nginx.org repo
+  hosts: all
+  become: true
+  tasks:
+    - name: Install prerequisites
+      apt:
+        name:
+          - curl
+          - gnupg2
+          - ca-certificates
+          - lsb-release
+          - ubuntu-keyring
+        state: present
+        update_cache: yes
+
+    - name: Download nginx signing key
+      ansible.builtin.get_url:
+        url: https://nginx.org/keys/nginx_signing.key
+        dest: /tmp/nginx_signing.key
+        mode: "0644"
+
+    - name: Convert and install nginx GPG key
+      ansible.builtin.apt_key:
+        url: https://nginx.org/keys/nginx_signing.key
+        keyring: /usr/share/keyrings/nginx-archive-keyring.gpg
+        state: present
+
+    - name: Verify nginx signing key
+      command: >
+        gpg --dry-run --quiet --no-keyring --import
+        --import-options import-show
+        /usr/share/keyrings/nginx-archive-keyring.gpg
+      register: key_check
+      changed_when: false
+
+    - name: Fail if fingerprint is incorrect
+      fail:
+        msg: "Nginx signing key fingerprint does not match expected value!"
+      when: "'573BFD6B3D8FBC641079A6ABABF5BD827BD9BF62' not in key_check.stdout"
+
+    # - name: Add stable nginx apt repository
+    #   copy:
+    #     dest: /etc/apt/sources.list.d/nginx.list
+    #     content: |
+    #       deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/ubuntu {{ ansible_lsb.codename }} nginx
+    - name: Add nginx repository
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/ubuntu {{ ansible_lsb.codename }} nginx"
+        state: present
+        filename: nginx
+        update_cache: yes
+
+    - name: Set repository pinning
+      copy:
+        dest: /etc/apt/preferences.d/99nginx
+        content: |
+          Package: *
+          Pin: origin nginx.org
+          Pin: release o=nginx
+          Pin-Priority: 900
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install nginx
+      apt:
+        name: nginx
+        state: present
+
+- name: Install Certbot and Generate Certificates
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install Certbot
+      community.general.snap:
+        name: certbot
+        state: present
+        classic: true
+
+    - name: Generate Let's Encrypt certificate
+      command: >
+        certbot certonly --standalone
+        -d {{ ansible_host }}
+        --email {{ email }}
+        --agree-tos --non-interactive
+      args:
+        creates: /etc/letsencrypt/live/{{ ansible_host }}/fullchain.pem
+
+- name: Install Docker from official Docker repository
+  hosts: all
+  become: yes
+  vars:
+    arch_map:
+      x86_64: amd64
+      aarch64: arm64
+      armv7l: armhf
+  tasks:
+    - name: Create keyrings directory for Docker
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: Download Docker's official GPG key
+      get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+        force: yes
+
+    - name: Add Docker repository
+      copy:
+        dest: /etc/apt/sources.list.d/docker.list
+        content: |
+          deb [arch={{ arch_map[ansible_architecture] | default(ansible_architecture) }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_lsb.codename }} stable
+
+    - name: Update apt cache
+      apt:
+        update_cache: true
+
+    - name: Install Docker packages
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+
+- name: Configure UFW firewall
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install UFW if not present
+      apt:
+        name: ufw
+        state: present
+        update_cache: yes
+
+    - name: Allow SSH (port 22)
+      community.general.ufw:
+        rule: allow
+        port: "22"
+        proto: tcp
+
+    - name: Allow HTTP (port 80)
+      community.general.ufw:
+        rule: allow
+        port: "80"
+        proto: tcp
+
+    - name: Allow custom app port (422)
+      community.general.ufw:
+        rule: allow
+        port: "443"
+        proto: tcp
+
+    - name: Enable UFW
+      community.general.ufw:
+        state: enabled
+        policy: deny

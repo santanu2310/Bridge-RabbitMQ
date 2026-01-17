@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# --------------------------------------------------------------------
+# Certbot deploy hook: install renewed MongoDB TLS certs and reload
+# --------------------------------------------------------------------
+set -euo pipefail
+
+# The primary domain Certbot just renewed (e.g. mongo1.example.com)
+DOMAIN="{{ansible_host}}"
+
+# Paths
+SRC_DIR="/etc/letsencrypt/live/${DOMAIN}"
+DEST_DIR="/etc/ssl/mongodb"
+
+# Ensure destination exists
+mkdir -p "${DEST_DIR}"
+cat "${SRC_DIR}/privkey.pem" "${SRC_DIR}/cert.pem" > "${DEST_DIR}/cert.pem"
+cp "${SRC_DIR}/fullchain.pem" "${DEST_DIR}/fullchain.pem"
+
+chmod 600 "${DEST_DIR}/cert.pem" "${DEST_DIR}/fullchain.pem"
+chown mongodb:mongodb "${DEST_DIR}/cert.pem" "${DEST_DIR}/fullchain.pem"
+
+# Reload mongod so it picks up the new certificates
+if systemctl is-active --quiet mongod; then
+  systemctl restart mongod
+else
+  systemctl restart mongod
+  echo "mongod service not running; restarting reload"
+fi
+
+echo "✅ MongoDB certs for ${DOMAIN} deployed and mongod reloaded."

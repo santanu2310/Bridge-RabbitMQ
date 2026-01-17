@@ -16,14 +16,12 @@ import { useFriendStore } from "@/stores/friend";
 import { useCallStore } from "@/stores/call";
 
 import IconSearch from "@/components/icons/IconSearch.vue";
-import IconCall from "@/components/icons/IconCall.vue";
 import IconVideoCall from "@/components/icons/IconVideoCall.vue";
 import IconAdd from "@/components/icons/IconAdd.vue";
 import IconSticker from "@/components/icons/IconSticker.vue";
 import IconMic from "@/components/icons/IconMic.vue";
 import IconSend from "@/components/icons/IconSend.vue";
 import IconClose from "@/components/icons/IconClose.vue";
-import IconMore from "@/components/icons/IconMore.vue";
 import Message from "@/components/Message.vue";
 import type { Message as MessageType } from "@/types/Message";
 
@@ -76,7 +74,7 @@ const messages = computed(() => {
 
   return rawMessages.map((msg) => {
     const sendingTime = Math.trunc(
-      new Date(msg.sendingTime as string).getTime() / (1000 * 60 * 60 * 24)
+      new Date(msg.sendingTime as string).getTime() / (1000 * 60 * 60 * 24),
     );
     const showDate = lastDate !== sendingTime;
     lastDate = sendingTime;
@@ -91,7 +89,15 @@ watch(
     nextTick(() => {
       scrollToBottom();
     });
-  }
+  },
+);
+
+watch(
+  () => userStore.currentConversation?.convId,
+  () => {
+    friend.value =
+      friendStore.friends[userStore.currentConversation?.receiverId as string];
+  },
 );
 
 function onSelectEmoji(emoji: object) {
@@ -192,10 +198,10 @@ function backConversation() {
           <IconSearch />
         </button>
         <button
-          class="h-8 mx-2 aspect-square bg-transparent border-none flex items-center justify-center"
+          class="h-8 mx-2 aspect-square bg-transparent border-none text-lg flex items-center justify-center"
           @click="callStore.makeCall(friend!.id)"
         >
-          <IconCall />
+          <i class="ri-phone-fill"></i>
         </button>
         <button
           class="h-8 mx-2 aspect-square bg-transparent border-none flex items-center justify-center"
@@ -277,7 +283,7 @@ function backConversation() {
           type="text"
           v-model="text"
           placeholder="Type your message ..."
-          @keyup.enter="sendMessage(), removeSelectedFile()"
+          @keyup.enter="(sendMessage(), removeSelectedFile())"
         />
       </div>
       <button

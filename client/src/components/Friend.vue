@@ -19,6 +19,7 @@ async function setCurrentConversation() {
     convId: null,
   };
   await friendStore.getConversation(props.id);
+  userStore.isChatVisible = true;
 }
 </script>
 

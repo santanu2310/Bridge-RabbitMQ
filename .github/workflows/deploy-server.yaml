@@ -2,12 +2,11 @@ name: Build and Push Docker Images
 
 on:
   push:
-    branches: [main, develop]
-    tags: ["v*"]
+    branches: 
+      - master
     paths:
       - "server/**"
-  pull_request:
-    branches: [main]
+
   workflow_dispatch:
 
 env:
@@ -95,3 +94,35 @@ jobs:
           echo "- **Registry:** ${{ env.REGISTRY }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Repository:** ${{ env.IMAGE_NAME_CELERY }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Tags:** ${{ steps.meta-celery.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+  
+  
+  deploy-to-azure:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Ansible
+        run: |
+          sudo apt update
+          sudo apt install software-properties-common
+          sudo add-apt-repository --yes --update ppa:ansible/ansible
+          sudo apt install ansible -y
+          ansible-galaxy collection install community.docker
+          ansible --version
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/azure_vm_key
+          chmod 600 ~/.ssh/azure_vm_key
+          ssh-keyscan -H ${{ secrets.AZURE_VM_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy with Ansible
+        run: |
+          ansible-playbook -i ./infra/backend/ansible/inventory.ini ./infra/backend/ansible/redeploy.yml \
+            --extra-vars "@infra/backend/ansible/group_vars/server-redeploy.yml" \
+            -e "fastapi_image=${{ env.REGISTRY }}/$(echo ${{ env.IMAGE_NAME_API }}:${{ github.ref_name }}-${GITHUB_SHA::7} | tr '[:upper:]' '[:lower:]')" \
+            -e "celery_image=${{ env.REGISTRY }}/$(echo ${{ env.IMAGE_NAME_CELERY }}:${{ github.ref_name }}-${GITHUB_SHA::7} | tr '[:upper:]' '[:lower:]')"

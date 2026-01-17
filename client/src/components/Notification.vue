@@ -1,111 +1,90 @@
 <script setup lang="ts">
-	import { useAuthStore } from "@/stores/auth";
-	import { useFriendStore } from "@/stores/friend";
-	import { mapResponseToUser } from "@/types/User";
+import { useAuthStore } from "@/stores/auth";
+import { useFriendStore } from "@/stores/friend";
+import Avatar from "@/components/ui/Avatar.vue";
+import IconClose from "@/components/icons/IconClose.vue";
+import IconTick from "@/components/icons/IconTick.vue";
+import { mapResponseToUser } from "@/types/User";
 
-	const authStore = useAuthStore();
-	const friendStore = useFriendStore();
+const authStore = useAuthStore();
+const friendStore = useFriendStore();
 
-	async function acceptRequest(request_id: string) {
-		try {
-			const response = await authStore.authAxios({
-				method: "patch",
-				url: `friends/accept-request/${request_id}`,
-			});
-			console.log(response.status);
+async function acceptRequest(request_id: string) {
+  try {
+    const response = await authStore.authAxios({
+      method: "patch",
+      url: `friends/accept-request/${request_id}`,
+    });
+    console.log(response.status);
 
-			if (response.status === 200) {
-				console.log(response.data);
+    if (response.status === 200) {
+      console.log(response.data);
 
-				friendStore.friendRequests = friendStore.friendRequests.filter(
-					(request) => request.id === request_id
-				);
+      friendStore.friendRequests = friendStore.friendRequests.filter(
+        (request) => request.id === request_id
+      );
 
-				friendStore.addFriend(response.data.friendship_document_id);
-			}
-		} catch (error) {
-			console.error(error);
-		}
-	}
-	async function rejectRequest(request_id: string) {
-		try {
-			const response = await authStore.authAxios({
-				method: "patch",
-				url: `friends/reject-request/${request_id}`,
-			});
+      friendStore.addFriend(response.data.friendship_document_id);
+    }
+  } catch (error) {
+    console.error(error);
+  }
+}
+async function rejectRequest(request_id: string) {
+  try {
+    const response = await authStore.authAxios({
+      method: "patch",
+      url: `friends/reject-request/${request_id}`,
+    });
 
-			if (response.status === 200) {
-				friendStore.friendRequests = friendStore.friendRequests.filter(
-					(request) => request.id != request_id
-				);
-			}
-		} catch (error) {
-			console.error(error);
-		}
-	}
-	const props = defineProps<{
-		id: string;
-		name: string;
-		message: string;
-	}>();
-	console.log(props.name);
+    if (response.status === 200) {
+      friendStore.friendRequests = friendStore.friendRequests.filter(
+        (request) => request.id != request_id
+      );
+    }
+  } catch (error) {
+    console.error(error);
+  }
+}
+const props = defineProps<{
+  id: string;
+  name: string;
+  message: string;
+}>();
 </script>
 <template>
-	<div class="w-full p-4 flex">
-		<div class="h-16 w-auto aspect-square overflow-hidden rounded-full">
-			<img
-				src="https://doot-dark.react.themesbrand.com/static/media/avatar-1.9c8e605558cece65b06c.jpg"
-				alt=""
-				class="w-full h-full object-cover"
-			/>
-		</div>
-		<div
-			class="h-auto flex flex-col items-start text-sm"
-			style="min-width: calc(97% - 4rem); margin-left: 3%"
-		>
-			<span class="font-medium"
-				>Freind request from <b class="">{{ name }}</b></span
-			>
-			<span class="font-light">{{ message }}</span>
-			<div class="w-full mt-2 flex justify-between">
-				<button class="accept-btn" @click="acceptRequest(id)">
-					Accept
-				</button>
-				<button class="reject-btn" @click="rejectRequest(id)">
-					Decline
-				</button>
-			</div>
-		</div>
-	</div>
+  <div class="w-full h-20 flex items-center px-3 py-2">
+    <div class="h-[70%] w-auto aspect-square overflow-hidden rounded-full">
+      <Avatar :profileUrl="null" :userName="name" />
+    </div>
+    <div class="h-auto flex flex-col flex-grow items-start text-sm px-2">
+      <span class="font-medium">{{ name }}</span>
+      <span class="font-light">{{ message }}</span>
+    </div>
+    <div class="w-1/4 min-h-9 h-2/3 mt-2 flex justify-between">
+      <button
+        class="btn border-red-500 text-red-500"
+        @click="rejectRequest(id)"
+      >
+        <IconClose />
+      </button>
+      <button class="btn bg-primary border-primary" @click="acceptRequest(id)">
+        <IconTick />
+      </button>
+    </div>
+  </div>
 </template>
 
 <style scoped>
-	:root{
-		--height: `${height}rem`
-	}
-
-	.not-info{
-		width: calc(100% - var(--height));
-	}
-
-	.accept-btn{
-		width: 45%;
-		height: 28px;
-		border-radius: 6px;
-		border: 2px solid var(--primary);
-		color: var(--primary);
-	}
-
-	.accept-btn:hover{
-		background: var(--primary);
-		color: var(--color-background);
-	}
-
-	.reject-btn{
-		width: 45%;
-		height: 28px;
-		border-radius: 6px;
-		background: rgb(227, 53, 14);
-		color: var(--color-background);
-	}
+.btn {
+  width: auto;
+  height: 75%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border-width: 1px;
+  border-style: solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 </style>

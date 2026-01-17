@@ -18,8 +18,8 @@ from app.core.schemas import (
 from app.utils import get_file_extension
 from botocore.exceptions import ClientError, NoCredentialsError  # type: ignore
 
-from .services import process_image_to_aspect
 from .utils import list_friends_id
+from .services import process_image_to_aspect, send_otp_email
 
 celery_app = create_celery_client()
 
@@ -227,4 +227,13 @@ def process_profile_media(file_id: str, user_id: str, media_type: str):
         elif isinstance(e, (AMQPConnectionError, ConnectionClosed)):
             dep_manager.reset_connection(Dependency.queue)
 
+        raise
+
+
+@celery_app.task
+def send_email(otp: str, email: str):
+    try:
+        send_otp_email(to_email=email, otp=otp)
+    except Exception as e:
+        logger.exception(f"Failed to send otp to user email: {email}. Error: {e}")
         raise

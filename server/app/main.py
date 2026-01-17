@@ -7,6 +7,7 @@ from collections.abc import AsyncIterator
 from aio_pika.abc import AbstractRobustConnection
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from redis.asyncio import Redis
 
 from app.api.api import router
 
@@ -28,12 +29,16 @@ from app.core.db import (
     create_sync_client,
 )
 from app.core.config import settings
+from app.core.redis import get_redis_client
+from app.core.exceptions import AppException
+from .exception_handler import app_exception_handler
 
 
 class State(TypedDict):
     async_db: AsyncDatabase
     sync_db: SyncDatabase
     queue_connection: AbstractRobustConnection
+    redis: Redis
 
 
 logger = logging.getLogger(__name__)
@@ -41,9 +46,13 @@ logger = logging.getLogger(__name__)
 
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[State]:
+    logger.info("Lifespan: Creating DB client...")
     async_cleint = create_async_client()
     sync_client = create_sync_client()
+    logger.info("Lifespan: Connecting to RabbitMQ...")
     queue_connection = await create_rabbit_connection()
+    logger.info("Connecting to Redis...")
+    redis_client = await get_redis_client()
 
     await create_rabbit_exchanges(connection=queue_connection)
 
@@ -57,11 +66,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
         asyncio.create_task(profile_media_update_confirmation()),
         asyncio.create_task(send_message_to_users()),
     ]
+    logger.info("yealding the state")
 
     yield {
         "async_db": async_db,
         "sync_db": SyncDatabase(sync_client, settings.DATABASE_NAME),
         "queue_connection": queue_connection,
+        "redis": redis_client,
     }
 
     for task in app.state.background_tasks:
@@ -72,22 +83,21 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     async_cleint.close()
     sync_client.close()
     await queue_connection.close()
+    await redis_client.close()
 
 
 def create_app() -> FastAPI:
     app = FastAPI(lifespan=lifespan)
 
-    origins = ["http://localhost:8000", "http://localhost:5173"]
-
     app.include_router(router=router)
-
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=origins,
+        allow_origins=[settings.ALLOW_ORIGINS],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.add_exception_handler(AppException, app_exception_handler)  # type: ignore
 
     return app
 

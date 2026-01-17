@@ -16,6 +16,11 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
+    ALLOW_ORIGINS: str = "http://localhost:5173"
+
+    MAIL: str = ""
+    MAIL_PASSKEY: str = ""
+
     # JWT secrets
     JWT_ACCESS_SECRET_KEY: str = ""
     JWT_REFRESH_SECRET_KEY: str = ""
@@ -40,15 +45,12 @@ class Settings(BaseSettings):
     RABBITMQ_USER_PASSWORD: str = ""
 
     # Mongodb
-    MONGOD_URL: str = "mongodb://mongo1:27017,mongo2:27017,mongo3:27017/?replicaSet=rs0"
+    MONGOD_URL: str = ""
     DATABASE_NAME: str = "bridge"
+    REDIS_URL: str = "redis://redis:6379"
 
-    # RABBITMQ_URL: str = "amqps://b-553fe81b-63b6-4ace-bd15-186c6428c97c.mq.ap-south-1.amazonaws.com:5671"
-    # RABBITMQ_HOST: str = (
-    #     "b-553fe81b-63b6-4ace-bd15-186c6428c97c.mq.ap-south-1.amazonaws.com"
-    # )
-    RABBITMQ_PORT: str = "5671"
-    CELERY_BROKER_URL: str = "amqp://bridge-bot:Mybridge1936@rabbitmq:5672"
+    RABBITMQ_URL: str = "amqp://bridge-bot:Mybridge1936@rabbitmq:5672"
+    CELERY_BROKER_URL: str = ""
 
 
 settings = Settings()
@@ -56,8 +58,7 @@ logger = logging.getLogger(__name__)
 
 
 def create_celery_client() -> Celery:
-    logger.critical(f"{settings.CELERY_BROKER_URL}")
-    return Celery("tasks", broker=settings.CELERY_BROKER_URL)
+    return Celery("tasks", broker=settings.RABBITMQ_URL)
 
 
 def create_s3_client():

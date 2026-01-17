@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const props = defineProps<{
   text: string;
+  badge?: boolean | null;
 }>();
 </script>
 
@@ -8,9 +9,12 @@ const props = defineProps<{
   <div
     class="w-auto h-full lg:w-full lg:h-auto group relative inline-flex items-center justify-center cursor-pointer"
   >
-    <!-- Slot for the trigger element -->
+    <span
+      v-if="badge"
+      class="w-2 h-auto aspect-square overflow-hidden rounded-full bg-red-500 absolute top-[22%] right-[22%] block"
+    ></span>
     <div
-      class="w-auto lg:w-full h-full lg:h-auto p-1 aspect-square flex items-center justify-center"
+      class="w-auto lg:w-full h-full lg:h-auto p-1 aspect-square flex items-center justify-center text-lg"
     >
       <slot></slot>
     </div>

@@ -1,3 +1,4 @@
+from bson import ObjectId
 import jwt
 import logging
 from typing import Annotated
@@ -5,6 +6,7 @@ from datetime import timedelta, datetime, timezone
 from fastapi import APIRouter, Body, HTTPException, status, Depends, Query, Cookie
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
+from redis.asyncio import Redis
 
 from app.core.schemas import (
     UserRegistration,
@@ -21,16 +23,31 @@ from app.utils import (
 )
 from app.background_tasks.celery.tasks import process_profile_media
 
-from app.deps import get_user_from_refresh_token, get_user_from_access_token_http
-from app.core.db import get_async_database, AsyncDatabase
+from app.deps import (
+    get_user_from_refresh_token,
+    get_user_from_access_token_http,
+    get_verified_user,
+)
+from app.core.db import get_async_database, AsyncDatabase, ReturnDocument
 from app.core.config import settings
+from app.core.redis import get_redis_conn, get_value, delete_key
 
 from .services import (
-    create_user,
+    register_new_user,
     update_user_profile,
     create_access_token,
     create_refresh_token,
     get_full_user,
+    email_verify_request,
+    send_password_reset_otp,
+    reset_password as _reset_password,
+)
+
+from .schemas import (
+    EmailVerifyRequest,
+    PasswordResetRequest,
+    VerifyOtpRequest,
+    PassResetOtpRequest,
 )
 
 router = APIRouter()
@@ -40,14 +57,79 @@ logger = logging.getLogger(__name__)
 
 @router.post("/register")
 async def user_register(
-    user: UserRegistration = Body(...), db: AsyncDatabase = Depends(get_async_database)
+    user: UserRegistration = Body(...),
+    db: AsyncDatabase = Depends(get_async_database),
+    redis_client=Depends(get_redis_conn),
 ):
-    try:
-        created = await create_user(db, user)
-        return JSONResponse(content=created, status_code=status.HTTP_201_CREATED)
+    created = await register_new_user(db=db, user=user, redis_client=redis_client)
+    return JSONResponse(content=created, status_code=status.HTTP_201_CREATED)
 
-    except HTTPException as e:
-        raise e
+
+@router.post("/otp")
+async def request_otp(
+    payload: VerifyOtpRequest = Body(...),
+    db: AsyncDatabase = Depends(get_async_database),
+    redis_client: Redis = Depends(get_redis_conn),
+):
+    req_status = await email_verify_request(
+        user_id=ObjectId(payload.user_id), db=db, redis_client=redis_client
+    )
+    return JSONResponse(content=req_status, status_code=status.HTTP_200_OK)
+
+
+@router.post("/verify-email")
+async def verify_email(
+    verify_request: EmailVerifyRequest = Body(...),
+    db: AsyncDatabase = Depends(get_async_database),
+    redis_client=Depends(get_redis_conn),
+):
+    stored_otp = await get_value(redis_conn=redis_client, key=verify_request.email)
+
+    if not stored_otp:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="OTP expired or not found. Please request a new one.",
+        )
+    if stored_otp != verify_request.otp:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Incorrect code",
+        )
+
+    updated_user = await db.user_auth.find_one_and_update(
+        {"email": verify_request.email},
+        {"$set": {"email_verified": True}},
+        return_document=ReturnDocument.AFTER,
+    )
+
+    if not updated_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Wrong email address",
+        )
+    await delete_key(redis_conn=redis_client, key=verify_request.email)
+
+    return {"message": "successfully verified email address"}
+
+
+@router.post("/password/otp")
+async def password_reset_opt_request(
+    req_data: PassResetOtpRequest,
+    db: AsyncDatabase = Depends(get_async_database),
+    redis_client=Depends(get_redis_conn),
+):
+    return await send_password_reset_otp(
+        email=req_data.email, redis_client=redis_client, db=db
+    )
+
+
+@router.post("/password/reset")
+async def reset_password(
+    req_data: PasswordResetRequest,
+    db: AsyncDatabase = Depends(get_async_database),
+    redis_client=Depends(get_redis_conn),
+):
+    return await _reset_password(req_data=req_data, db=db, redis_client=redis_client)
 
 
 @router.post("/get-token")
@@ -62,7 +144,7 @@ async def login_for_access_token(
             status_code=status.HTTP_404_NOT_FOUND, detail="User name not found"
         )
 
-    if not verify_password(user["password"], form_data.password, user["hashing_salt"]):
+    if not verify_password(user["password"], form_data.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -185,7 +267,7 @@ async def update_user_data(
 
 @router.get("/upload-url")
 async def get_presigned_post(
-    user: UserAuthOut = Depends(get_user_from_access_token_http),
+    user: UserAuthOut = Depends(get_verified_user),
 ):
     return create_presigned_upload_url()
 
@@ -193,7 +275,7 @@ async def get_presigned_post(
 @router.post("/add-profile-image")
 async def add_user_image(
     data: Annotated[UpdatableUserImages, Body()],
-    user: UserAuthOut = Depends(get_user_from_access_token_http),
+    user: UserAuthOut = Depends(get_verified_user),
 ):
     if data.profile_picture_id is None and data.banner_picture_id is None:
         raise HTTPException(
@@ -218,7 +300,7 @@ async def add_user_image(
 
 @router.get("/download-url")
 async def get_presigned_download(
-    user: UserAuthOut = Depends(get_user_from_access_token_http),
+    user: UserAuthOut = Depends(get_verified_user),
     key: str = Query(description="Key of the file"),
 ):
     return create_presigned_download_url(key)

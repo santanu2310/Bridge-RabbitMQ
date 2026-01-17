@@ -3,7 +3,7 @@ from fastapi import Request, WebSocket
 from motor.motor_asyncio import (
     AsyncIOMotorClient,
 )
-from pymongo import MongoClient
+from pymongo import MongoClient, ReturnDocument
 from app.core.config import settings
 
 logging.basicConfig(level="DEBUG")
@@ -54,7 +54,6 @@ class SyncDatabase(BaseDatabase):
 
 
 def create_async_client() -> AsyncIOMotorClient:
-    logger.critical("crate async client is being used")
     return AsyncIOMotorClient(settings.MONGOD_URL)
 
 
@@ -84,4 +83,5 @@ __all__ = [
     "get_async_database_from_socket",
     "create_sync_client",
     "get_sync_database",
+    "ReturnDocument",
 ]

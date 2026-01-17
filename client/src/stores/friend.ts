@@ -130,42 +130,52 @@ export const useFriendStore = defineStore("friend", () => {
       const oldMessages = (await request) as Message[];
       return oldMessages;
     } else {
-      //retrive from server
-      const response = await authStore.authAxios({
-        method: "get",
-        url: `conversations/get-conversation?friend_id=${userId}`,
-        withCredentials: true,
-      });
+      try {
+        //retrive from server
+        const response = await authStore.authAxios({
+          method: "get",
+          url: `conversations/get-conversation?friend_id=${userId}`,
+          withCredentials: true,
+        });
 
-      if (response.status == 200) {
-        const convResponse: Conversation = {
-          id: response.data.id,
-          participant: response.data.participants.find(
-            (id: string) => id != userStore.user.id
-          ) as string, //It shoud be participants
-          startDate: response.data.start_date,
-          lastMessageDate: response.data.last_message_date,
-        };
+        if (response.status == 200) {
+          const convResponse: Conversation = {
+            id: response.data.id,
+            participant: response.data.participants.find(
+              (id: string) => id != userStore.user.id
+            ) as string, //It shoud be participants
+            startDate: response.data.start_date,
+            lastMessageDate: response.data.last_message_date,
+          };
 
-        //Add the conversation to indesedDb and to local variable
-        await indexedDbService.addRecord("conversation", convResponse);
-        if (
-          userStore.currentConversation?.receiverId == convResponse.participant
-        ) {
-          userStore.currentConversation!.convId = convResponse.id;
+          //Add the conversation to indesedDb and to local variable
+          await indexedDbService.addRecord("conversation", convResponse);
+          if (
+            userStore.currentConversation?.receiverId ==
+            convResponse.participant
+          ) {
+            userStore.currentConversation!.convId = convResponse.id;
+          }
+
+          //add the messages to the indesedDb
+          const oldMessages: Message[] = response.data.messages.map(
+            (msg: object) => mapResponseToMessage(msg)
+          );
+
+          indexedDbService.batchUpsert("message", oldMessages);
+          userStore.conversations[convResponse.id!] = {
+            messages: oldMessages,
+            isActive: true,
+            participant: convResponse.participant as string,
+            lastMessageDate: new Date().toISOString(),
+          };
+          return oldMessages;
         }
-
-        //add the messages to the indesedDb
-        const oldMessages = response.data.messages.map((msg: object) =>
-          mapResponseToMessage(msg)
-        );
-
-        indexedDbService.batchUpsert("message", oldMessages);
-
-        return oldMessages;
+        return null;
+      } catch (error) {
+        console.error(error);
+        return null;
       }
-
-      return null;
     }
   }
 

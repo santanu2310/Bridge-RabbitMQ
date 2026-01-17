@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { FriendBrief } from '@/types/FreindBrief';
+import type { FriendBrief } from "@/types/FreindBrief";
 
 const props = defineProps<{
-  data: FriendBrief
+  data: FriendBrief;
 }>();
 
 function getInitials(name: string) {
@@ -14,9 +14,7 @@ function getInitials(name: string) {
 </script>
 
 <template>
-  <div
-    class="w-full h-full max-h-18 px-2.5 py-1.5 flex items-center cursor-pointer"
-  >
+  <div class="w-full h-full max-h-18 px-2.5 py-1.5 flex items-center">
     <div class="w-auto h-full aspect-square p-1.5">
       <div class="w-full h-full overflow-hidden rounded-full">
         <img
@@ -40,10 +38,24 @@ function getInitials(name: string) {
         <span class="text-color-heading text-base/4 font-medium">{{
           data.fullName
         }}</span>
-        <span class="text-sm/4 font-normal text-color-text">@{{ data.userName }}</span>
+        <span class="text-sm/4 font-normal text-color-text"
+          >@{{ data.userName }}</span
+        >
       </div>
       <div class="h-full mx-3 flex items-center">
-        <button class="h-2/3 aspect-square rounded bg-color-background-mute text-primary" @click="$emit('addRequestMessage', data.userName)">+</button>
+        <div
+          v-if="data.friendStatus"
+          class="h-2/3 aspect-square rounded bg-color-background-mute text-primary text-xl flex items-center justify-center"
+        >
+          <i class="ri-time-line"></i>
+        </div>
+        <button
+          v-else
+          class="h-2/3 aspect-square rounded bg-color-background-mute text-primary"
+          @click="$emit('addRequestMessage', data.userName)"
+        >
+          +
+        </button>
       </div>
     </div>
   </div>

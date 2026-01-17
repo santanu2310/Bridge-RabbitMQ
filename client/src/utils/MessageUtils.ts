@@ -5,77 +5,81 @@ import type { Message } from "@/types/Message";
 import type { Conversation } from "@/types/Conversation";
 
 export function updateMessageInState(message: Message, tempId?: string | null) {
-	try {
-		const userStore = useUserStore();
+  try {
+    const userStore = useUserStore();
 
-		// Check for conversation and messages
-		const conversation =
-			userStore.conversations[message.conversationId as string];
-		if (!conversation || !conversation.messages) return;
+    // Check for conversation and messages
+    const conversation =
+      userStore.conversations[message.conversationId as string];
+    const tempConversation = userStore.conversations[tempId as string];
+    if (tempConversation) {
+      // delete the temp conversation
+      delete userStore.conversations[tempId as string];
+    }
 
-		const messages = conversation.messages;
-		const messageId = tempId ? tempId : message.id;
+    console.log("after deleting temp conv", userStore.conversations);
 
-		// Update the message in the conversation variable
-		for (let i = messages.length - 1; i >= 0; i--) {
-			if (messages[i].id === messageId) {
-				// messages[i] = Object.assign({}, toRaw(messages[i]), message);
-				const target = messages[i];
-				const newData = toRaw(message);
+    const messages = conversation.messages;
+    const messageId = tempId ? tempId : message.id;
 
-				// Only update the fields that exist on the new message
-				(Object.keys(newData) as (keyof Message)[]).forEach((key) => {
-					target[key] = newData[key] as any;
-				});
-				break;
-			}
-		}
-	} catch (e) {
-		console.log("error form mesage utility", e);
-	}
+    // Update the message in the conversation variable
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].id === messageId) {
+        // messages[i] = Object.assign({}, toRaw(messages[i]), message);
+        const target = messages[i];
+        const newData = toRaw(message);
+
+        // Only update the fields that exist on the new message
+        (Object.keys(newData) as (keyof Message)[]).forEach((key) => {
+          target[key] = newData[key] as any;
+        });
+        break;
+      }
+    }
+  } catch (e) {
+    console.log("error form mesage utility", e);
+  }
 }
 
 export function addMessageInState(message: Message, tempId?: string | null) {
-	const userStore = useUserStore();
+  const userStore = useUserStore();
 
-	// When the user is starting the conversation
-	if (!message.conversationId) {
-		// create a new inStateconversation
-		userStore.conversations[message.id!] = {
-			messages: [],
-			isActive: true,
-			participant: message.receiverId as string,
-			lastMessageDate: message.sendingTime as string,
-		};
+  // When the user is starting the conversation
+  if (!message.conversationId) {
+    // create a new inStateconversation
+    userStore.conversations[message.id!] = {
+      messages: [],
+      isActive: true,
+      participant: message.receiverId as string,
+      lastMessageDate: message.sendingTime as string,
+    };
 
-		//Add the message
-		userStore.conversations[message.id as string].messages.push(message);
-	}
-	// Message have conversation Id
-	else {
-		// Old message
-		if (userStore.conversations[message.conversationId]) {
-			userStore.conversations[message.conversationId].messages.push(
-				message
-			);
-		}
-		// New message initiated by other user
-		else {
-			userStore.conversations[message.conversationId] = {
-				messages: [message],
-				participant: message.senderId as string,
-				lastMessageDate: message.sendingTime as string,
-				isActive: true,
-			};
+    //Add the message
+    userStore.conversations[message.id as string].messages.push(message);
+  }
+  // Message have conversation Id
+  else {
+    // Old message
+    if (userStore.conversations[message.conversationId]) {
+      userStore.conversations[message.conversationId].messages.push(message);
+    }
+    // New message initiated by other user
+    else {
+      userStore.conversations[message.conversationId] = {
+        messages: [message],
+        participant: message.senderId as string,
+        lastMessageDate: message.sendingTime as string,
+        isActive: true,
+      };
 
-			if (tempId) delete userStore.conversations[tempId];
-		}
+      if (tempId) delete userStore.conversations[tempId];
+    }
 
-		// Update the temperory message with original message
-		if (tempId) {
-			updateMessageInState(message, tempId);
-		}
-	}
+    // Update the temperory message with original message
+    if (tempId) {
+      updateMessageInState(message, tempId);
+    }
+  }
 }
 
 export function updateMessageInStateByTempId(message: Message) {}

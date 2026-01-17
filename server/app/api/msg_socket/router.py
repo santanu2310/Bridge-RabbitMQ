@@ -112,6 +112,7 @@ async def handle_recieved_message(
     message_data = Message(
         sender_id=user_id,
         conversation_id=ObjectId(data.conversation_id),
+        receiver_id=ObjectId(data.receiver_id),
         message=data.message,
         temp_id=data.temp_id,
     )

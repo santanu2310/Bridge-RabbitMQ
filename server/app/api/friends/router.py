@@ -19,7 +19,7 @@ from app.core.schemas import (
 
 from app.core.db import AsyncDatabase, get_async_database
 from app.api.user.services import get_full_user
-from app.deps import get_user_from_access_token_http
+from app.deps import get_user_from_access_token_http, get_verified_user
 from app.api.sync_socket.router import send_message
 
 from .services import (
@@ -41,7 +41,7 @@ async def search_potential_friend(
     q: Optional[str] = Query(
         None, description="Search user by username or display name"
     ),
-    user: UserAuthOut = Depends(get_user_from_access_token_http),
+    user: UserAuthOut = Depends(get_verified_user),
     db: AsyncDatabase = Depends(get_async_database),
 ):
     if not q:

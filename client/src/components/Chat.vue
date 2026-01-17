@@ -25,7 +25,7 @@ const user = ref<User | null>(null);
 
 // Calculate unseen messages count on component initialization
 const unseenMessagesCount = props.messages.filter(
-  (message) => message.status != "seen"
+  (message) => message.status != "seen",
 ).length;
 
 // Fetch user data on component mount

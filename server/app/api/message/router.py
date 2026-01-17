@@ -1,4 +1,5 @@
 import uuid
+import asyncio
 from datetime import datetime
 from typing import Annotated, List, Optional
 
@@ -21,7 +22,7 @@ from app.core.schemas import (
     MessageData,
     UserAuthOut,
 )
-from app.deps import get_user_from_access_token_http
+from app.deps import get_verified_user
 
 from .services import get_or_create_conversation
 
@@ -30,38 +31,34 @@ router = APIRouter()
 
 @router.get("/updated-status")
 async def get_message_status_updates(
-    user: UserAuthOut = Depends(get_user_from_access_token_http),
+    user: UserAuthOut = Depends(get_verified_user),
     last_updated: Optional[datetime] = Query(
         None, description="conversation which have message after this date"
     ),
     db: AsyncDatabase = Depends(get_async_database),
 ):
-    try:
-        # Query the database for messages sent by the user that have been received or seen after `last_updated`
-        cursor = db.message.find(
-            {
-                "sender_id": user.id,
-                "$or": [
-                    {"received_time": {"$gt": last_updated}},
-                    {"seen_time": {"$gt": last_updated}},
-                ],
-            }
-        )
+    # Query the database for messages sent by the user that have been received or seen after `last_updated`
+    cursor = db.message.find(
+        {
+            "sender_id": user.id,
+            "$or": [
+                {"received_time": {"$gt": last_updated}},
+                {"seen_time": {"$gt": last_updated}},
+            ],
+        }
+    )
 
-        # Convert the database response into a list of Message objects
-        response = await cursor.to_list(length=None)
-        message_list: List[Message] = [Message(**message) for message in response]
+    # Convert the database response into a list of Message objects
+    response = await cursor.to_list(length=None)
+    message_list: List[Message] = [Message(**message) for message in response]
 
-        # Return the list of updated messages
-        return {"message_status_updates": message_list}
-    except Exception as e:
-        print(e)
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    # Return the list of updated messages
+    return {"message_status_updates": message_list}
 
 
 @router.get("/upload-url")
 async def create_presigned_post(
-    user: UserAuthOut = Depends(get_user_from_access_token_http),
+    user: UserAuthOut = Depends(get_verified_user),
 ):
     conditions = [
         ["content-length-range", 0, 20971520],  # 20 MB limit
@@ -96,7 +93,7 @@ async def create_presigned_post(
 
 @router.get("/download-url")
 async def create_presigned_download_url(
-    user: UserAuthOut = Depends(get_user_from_access_token_http),
+    user: UserAuthOut = Depends(get_verified_user),
     key: str = Query(description="Key of the file"),
 ):
     if not key:
@@ -129,7 +126,7 @@ async def create_presigned_download_url(
 @router.post("/media-message")
 async def handle_media_message(
     data: Annotated[MessageData, Body(...)],
-    user: UserAuthOut = Depends(get_user_from_access_token_http),
+    user: UserAuthOut = Depends(get_verified_user),
     db: AsyncDatabase = Depends(get_async_database),
 ):
     if not data.attachment:
@@ -161,4 +158,11 @@ async def handle_media_message(
 
     # Store the message instance to database collection
     message_response = await db.message.insert_one(message.model_dump(exclude={"id"}))
-    process_media_message.delay(str(message_response.inserted_id))
+    await asyncio.to_thread(
+        process_media_message.delay(str(message_response.inserted_id))
+    )
+
+    return {
+        "msg_id": message_response.inserted_id,
+        "status": "Processing message media file",
+    }
